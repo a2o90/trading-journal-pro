@@ -876,14 +876,29 @@ with st.sidebar:
         with st.expander("👑 Admin Panel", expanded=False):
             st.subheader("📋 Registered Users & Activity")
             
+            # Refresh button to reload latest data
+            if st.button("🔄 Refresh Stats", use_container_width=True):
+                st.rerun()
+            
+            # Force load all data freshly (bypass any caching)
             all_users = load_users()
-            all_trades_data = load_trades()  # Load all trades without filter
+            
+            # Load ALL trades from file directly (no user_id filter)
+            if os.path.exists(TRADES_FILE):
+                with open(TRADES_FILE, 'r') as f:
+                    all_trades_data = json.load(f)
+            else:
+                all_trades_data = []
+            
+            # Debug info
+            st.info(f"📊 **Debug Info:** Loaded {len(all_trades_data)} total trades from file | {len(all_users)} registered users")
             
             # Create a DataFrame for better display with activity stats
             users_display = []
             for user in all_users:
-                # Get trades for this user
-                user_trades = [t for t in all_trades_data if t.get('user_id') == user['id']]
+                # Get trades for this user (ensure type matching - convert both to int)
+                user_id = int(user['id'])
+                user_trades = [t for t in all_trades_data if int(t.get('user_id', 0)) == user_id]
                 
                 # Calculate stats
                 num_trades = len(user_trades)
@@ -927,6 +942,31 @@ with st.sidebar:
             with col3:
                 total_trades = sum([u['Total Trades'] for u in users_display])
                 st.metric("Total Trades", total_trades)
+            
+            st.divider()
+            
+            # Detailed user breakdown (for debugging)
+            with st.expander("🔍 Debug: View Trades by User", expanded=False):
+                debug_user = st.selectbox(
+                    "Select user to inspect",
+                    all_users,
+                    format_func=lambda u: f"{u['username']} (ID: {u['id']}) - {u['display_name']}",
+                    key="debug_user_select"
+                )
+                
+                if debug_user:
+                    debug_user_id = int(debug_user['id'])
+                    debug_user_trades = [t for t in all_trades_data if int(t.get('user_id', 0)) == debug_user_id]
+                    
+                    st.info(f"**User ID:** {debug_user_id} | **Trades found:** {len(debug_user_trades)}")
+                    
+                    if debug_user_trades:
+                        # Show first 5 trades with their user_id
+                        st.markdown("**Sample Trades (first 5):**")
+                        for i, t in enumerate(debug_user_trades[:5]):
+                            st.text(f"{i+1}. Date: {t.get('date', 'N/A')} | Symbol: {t.get('symbol', 'N/A')} | user_id in trade: {t.get('user_id', 'MISSING')} | P&L: {currency}{t.get('pnl', 0):.2f}")
+                    else:
+                        st.warning("No trades found for this user. This could mean:\n- User hasn't added any trades yet\n- Trades are assigned to wrong user_id\n- Data synchronization issue")
             
             st.divider()
             
