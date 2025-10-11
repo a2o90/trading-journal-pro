@@ -6,46 +6,126 @@ from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import calendar as cal
 
-# Password Protection
-def check_password():
-    """Returns `True` if the user had the correct password."""
+# Multi-User Authentication
+def login_page():
+    """Display login page and handle authentication"""
     
-    def password_entered():
-        """Checks whether a password entered by the user is correct."""
-        if st.session_state["password"] == "Topfloor2025":
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]  # Don't store password
-        else:
-            st.session_state["password_correct"] = False
+    st.title("📈 Trading Journal Pro")
+    st.markdown("---")
+    
+    # Create tabs for login and register
+    tab1, tab2 = st.tabs(["🔑 Login", "📝 Register"])
+    
+    with tab1:
+        st.subheader("Login to Your Journal")
+        
+        with st.form("login_form"):
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            submit = st.form_submit_button("Login", use_container_width=True)
+            
+            if submit:
+                if username and password:
+                    user = authenticate_user(username, password)
+                    if user:
+                        st.session_state['user'] = user
+                        st.session_state['logged_in'] = True
+                        st.success(f"Welcome back, {user['display_name']}!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Invalid username or password")
+                else:
+                    st.error("❌ Please fill in all fields")
+        
+        st.info("💡 Default account: `admin` / `Topfloor2025`")
+    
+    with tab2:
+        st.subheader("Create New Account")
+        
+        with st.form("register_form"):
+            new_username = st.text_input("Choose Username", key="reg_user")
+            new_display_name = st.text_input("Display Name", key="reg_display")
+            new_password = st.text_input("Choose Password", type="password", key="reg_pass")
+            new_password_confirm = st.text_input("Confirm Password", type="password", key="reg_pass_conf")
+            register = st.form_submit_button("Register", use_container_width=True)
+            
+            if register:
+                if new_username and new_display_name and new_password and new_password_confirm:
+                    if new_password != new_password_confirm:
+                        st.error("❌ Passwords don't match")
+                    elif len(new_password) < 6:
+                        st.error("❌ Password must be at least 6 characters")
+                    else:
+                        success, result = register_user(new_username, new_password, new_display_name)
+                        if success:
+                            st.success(f"✅ Account created! You can now login with username: {new_username}")
+                        else:
+                            st.error(f"❌ {result}")
+                else:
+                    st.error("❌ Please fill in all fields")
 
-    if "password_correct" not in st.session_state:
-        # First run, show input for password
-        st.text_input(
-            "🔒 Password", type="password", on_change=password_entered, key="password"
-        )
-        st.info("Please enter the password to access the Trading Journal")
-        return False
-    elif not st.session_state["password_correct"]:
-        # Password not correct, show input + error
-        st.text_input(
-            "🔒 Password", type="password", on_change=password_entered, key="password"
-        )
-        st.error("😕 Password incorrect")
-        return False
-    else:
-        # Password correct
-        return True
-
-if not check_password():
+# Check if user is logged in
+if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
+    login_page()
     st.stop()
 
-# ===== APP STARTS HERE (after password check) =====
+# Get current user
+current_user = st.session_state['user']
+
+# ===== APP STARTS HERE (after login) =====
 
 # Configuration
-trades_FILE = "trades.json"
+TRADES_FILE = "trades.json"
 ACCOUNTS_FILE = "accounts.json"
 SETTINGS_FILE = "settings.json"
+USERS_FILE = "users.json"
 ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
+
+def load_users():
+    """Load users from JSON file"""
+    if os.path.exists(USERS_FILE):
+        try:
+            with open(USERS_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            return [{"id": 0, "username": "admin", "password": "Topfloor2025", "display_name": "Admin", "created_at": datetime.now().strftime('%Y-%m-%d')}]
+    return [{"id": 0, "username": "admin", "password": "Topfloor2025", "display_name": "Admin", "created_at": datetime.now().strftime('%Y-%m-%d')}]
+
+def save_users(users):
+    """Save users to JSON file"""
+    with open(USERS_FILE, 'w') as f:
+        json.dump(users, f, indent=2)
+
+def authenticate_user(username, password):
+    """Authenticate user and return user object if valid"""
+    users = load_users()
+    for user in users:
+        if user['username'] == username and user['password'] == password:
+            return user
+    return None
+
+def register_user(username, password, display_name):
+    """Register a new user"""
+    users = load_users()
+    
+    # Check if username already exists
+    for user in users:
+        if user['username'] == username:
+            return False, "Username already exists"
+    
+    # Create new user
+    new_id = max([u['id'] for u in users], default=-1) + 1
+    new_user = {
+        'id': new_id,
+        'username': username,
+        'password': password,
+        'display_name': display_name,
+        'created_at': datetime.now().strftime('%Y-%m-%d')
+    }
+    
+    users.append(new_user)
+    save_users(users)
+    return True, new_user
 
 def load_settings():
     """Load app settings"""
@@ -62,26 +142,36 @@ def save_settings(settings):
     with open(SETTINGS_FILE, 'w') as f:
         json.dump(settings, f, indent=2)
 
-def load_accounts():
-    """Load accounts from JSON file"""
+def load_accounts(user_id=None):
+    """Load accounts from JSON file, optionally filtered by user_id"""
     if os.path.exists(ACCOUNTS_FILE):
         try:
             with open(ACCOUNTS_FILE, 'r') as f:
-                return json.load(f)
+                accounts = json.load(f)
+                # Add user_id if not present (legacy data)
+                for acc in accounts:
+                    if 'user_id' not in acc:
+                        acc['user_id'] = 0
+                
+                # Filter by user_id if specified
+                if user_id is not None:
+                    accounts = [a for a in accounts if a.get('user_id') == user_id]
+                
+                return accounts if accounts else [{"name": "Main Account", "size": 10000, "id": 0, "user_id": user_id}]
         except:
-            return [{"name": "Main Account", "size": 10000, "id": 0}]
-    return [{"name": "Main Account", "size": 10000, "id": 0}]
+            return [{"name": "Main Account", "size": 10000, "id": 0, "user_id": user_id if user_id else 0}]
+    return [{"name": "Main Account", "size": 10000, "id": 0, "user_id": user_id if user_id else 0}]
 
 def save_accounts(accounts):
     """Save accounts to JSON file"""
     with open(ACCOUNTS_FILE, 'w') as f:
         json.dump(accounts, f, indent=2)
 
-def load_trades():
-    """Load trades from JSON file"""
-    if os.path.exists(trades_FILE):
+def load_trades(user_id=None):
+    """Load trades from JSON file, optionally filtered by user_id"""
+    if os.path.exists(TRADES_FILE):
         try:
-            with open(trades_FILE, 'r') as f:
+            with open(TRADES_FILE, 'r') as f:
                 trades = json.load(f)
                 # Add unique IDs if they don't exist
                 for i, trade in enumerate(trades):
@@ -90,6 +180,9 @@ def load_trades():
                     # Add default account_id if not present
                     if 'account_id' not in trade:
                         trade['account_id'] = 0
+                    # Add user_id if not present (legacy data)
+                    if 'user_id' not in trade:
+                        trade['user_id'] = 0
                     # Add default psychological fields if not present
                     if 'trade_type' not in trade:
                         trade['trade_type'] = 'Daytrade'
@@ -109,6 +202,11 @@ def load_trades():
                         trade['duration_minutes'] = 0
                     if 'influence' not in trade:
                         trade['influence'] = ''
+                
+                # Filter by user_id if specified
+                if user_id is not None:
+                    trades = [t for t in trades if t.get('user_id') == user_id]
+                
                 return trades
         except:
             return []
@@ -253,14 +351,23 @@ st.title("📈 Trading Journal Pro")
 if 'force_reload' in st.session_state:
     del st.session_state['force_reload']
 
-# Load existing trades, accounts, and settings
-trades = load_trades()
-accounts = load_accounts()
+# Load existing trades, accounts, and settings for current user
+trades = load_trades(current_user['id'])
+accounts = load_accounts(current_user['id'])
 settings = load_settings()
 currency = settings.get('currency', '$')
 
 # Sidebar for settings
 with st.sidebar:
+    # User info and logout
+    st.success(f"👤 Logged in as: **{current_user['display_name']}**")
+    if st.button("🚪 Logout", use_container_width=True):
+        st.session_state['logged_in'] = False
+        del st.session_state['user']
+        st.rerun()
+    
+    st.divider()
+    
     st.header("💼 Account Management")
     
     # Currency selector
@@ -308,11 +415,14 @@ with st.sidebar:
             
             if st.form_submit_button("Add Account"):
                 if new_account_name:
-                    new_id = max([acc['id'] for acc in accounts], default=-1) + 1
+                    # Get highest ID across ALL accounts (not just user's)
+                    all_accounts = load_accounts()
+                    new_id = max([acc['id'] for acc in all_accounts], default=-1) + 1
                     accounts.append({
                         "name": new_account_name,
                         "size": new_account_size,
-                        "id": new_id
+                        "id": new_id,
+                        "user_id": current_user['id']
                     })
                     save_accounts(accounts)
                     st.success(f"Account '{new_account_name}' toegevoegd!")
@@ -545,11 +655,13 @@ with tab1:
                 pnl = calculate_pnl(entry_price, exit_price, quantity, side)
                 r_multiple = calculate_r_multiple(pnl, account_size)
                 
-                # Get next ID
-                next_id = max([t.get('id', 0) for t in trades], default=-1) + 1
+                # Get next ID (across all trades, not just user's)
+                all_trades = load_trades()
+                next_id = max([t.get('id', 0) for t in all_trades], default=-1) + 1
                 
                 trade = {
                     'id': next_id,
+                    'user_id': current_user['id'],
                     'account_id': selected_account['id'],
                     'account_name': selected_account['name'],
                     'date': trade_date.strftime('%Y-%m-%d'),

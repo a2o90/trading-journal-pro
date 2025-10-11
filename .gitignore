@@ -26,10 +26,11 @@ wheels/
 # Streamlit
 .streamlit/
 
-# Data files (optional - uncomment if you want to exclude your data)
-# trades.json
-# accounts.json
-# settings.json
+# Data files (contains sensitive user data)
+trades.json
+accounts.json
+settings.json
+users.json
 
 # Backup
 trading_journal_backup.py
