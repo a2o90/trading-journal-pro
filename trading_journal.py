@@ -581,7 +581,12 @@ def create_calendar_view(df, year, month):
     return daily_stats
 
 # Streamlit App
-st.set_page_config(page_title="Trading Journal Pro", layout="wide", page_icon="📈")
+st.set_page_config(
+    page_title="Trading Journal Pro", 
+    layout="wide", 
+    page_icon="📈",
+    initial_sidebar_state="expanded"  # Sidebar always starts expanded with collapse button visible
+)
 
 # Load settings for dark mode
 settings = load_settings()
@@ -616,6 +621,18 @@ st.markdown(f"""
     /* Sidebar */
     [data-testid="stSidebar"] {{
         background-color: {secondary_bg};
+    }}
+    
+    /* Sidebar collapse button - make it visible */
+    [data-testid="collapsedControl"] {{
+        color: {text_color} !important;
+        background-color: {card_bg} !important;
+        border: 2px solid {border_color} !important;
+    }}
+    
+    [data-testid="collapsedControl"]:hover {{
+        background-color: {hover_color} !important;
+        border-color: {text_color} !important;
     }}
     
     /* All text */
