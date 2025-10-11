@@ -22,8 +22,8 @@ def load_users():
             with open(USERS_FILE, 'r') as f:
                 return json.load(f)
         except:
-            return [{"id": 0, "username": "admin", "password": "Topfloor2025", "display_name": "Admin", "created_at": datetime.now().strftime('%Y-%m-%d')}]
-    return [{"id": 0, "username": "admin", "password": "Topfloor2025", "display_name": "Admin", "created_at": datetime.now().strftime('%Y-%m-%d')}]
+            return [{"id": 0, "username": "admin", "password": "Topfloor2025!!!", "display_name": "Admin", "created_at": datetime.now().strftime('%Y-%m-%d')}]
+    return [{"id": 0, "username": "admin", "password": "Topfloor2025!!!", "display_name": "Admin", "created_at": datetime.now().strftime('%Y-%m-%d')}]
 
 def save_users(users):
     """Save users to JSON file"""
@@ -370,6 +370,30 @@ with st.sidebar:
         st.rerun()
     
     st.divider()
+    
+    # Admin Panel (only visible to admin user)
+    if current_user['username'] == 'admin':
+        with st.expander("👑 Admin Panel", expanded=False):
+            st.subheader("📋 Registered Users")
+            
+            all_users = load_users()
+            
+            # Create a DataFrame for better display
+            users_display = []
+            for user in all_users:
+                users_display.append({
+                    'ID': user['id'],
+                    'Username': user['username'],
+                    'Display Name': user['display_name'],
+                    'Created': user.get('created_at', 'N/A')
+                })
+            
+            users_df = pd.DataFrame(users_display)
+            st.dataframe(users_df, use_container_width=True, hide_index=True)
+            
+            st.caption(f"Total users: {len(all_users)}")
+        
+        st.divider()
     
     st.header("💼 Account Management")
     
