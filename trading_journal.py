@@ -15,7 +15,7 @@ NOTES_FILE = "daily_notes.json"
 ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
 
 # App Version
-APP_VERSION = "2.1.0"
+APP_VERSION = "2.1.1"
 LAST_UPDATE = "2025-10-11"
 
 # ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
@@ -89,6 +89,28 @@ def login_page():
     """Display login page and handle authentication"""
     
     st.title("📈 Trading Journal Pro")
+    
+    # Display version info on login page
+    from datetime import datetime
+    import pytz
+    
+    # Get current time in NL timezone
+    nl_tz = pytz.timezone('Europe/Amsterdam')
+    current_time_nl = datetime.now(nl_tz).strftime('%H:%M:%S')
+    current_date_nl = datetime.now(nl_tz).strftime('%d-%m-%Y')
+    
+    st.markdown(f"""
+    <div style='background-color: rgba(38, 39, 48, 0.5); padding: 15px; border-radius: 10px; 
+                border: 1px solid rgba(250, 250, 250, 0.1); text-align: center; margin-bottom: 20px;'>
+        <p style='margin: 0; font-size: 14px;'>
+            <strong>Version {APP_VERSION}</strong> | Last Updated: {LAST_UPDATE}
+        </p>
+        <p style='margin: 5px 0 0 0; font-size: 12px; opacity: 0.7;'>
+            🕐 NL Time: {current_date_nl} {current_time_nl}
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
     st.markdown("---")
     
     # Create tabs for login and register
