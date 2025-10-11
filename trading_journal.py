@@ -6,80 +6,14 @@ from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import calendar as cal
 
-# Multi-User Authentication
-def login_page():
-    """Display login page and handle authentication"""
-    
-    st.title("📈 Trading Journal Pro")
-    st.markdown("---")
-    
-    # Create tabs for login and register
-    tab1, tab2 = st.tabs(["🔑 Login", "📝 Register"])
-    
-    with tab1:
-        st.subheader("Login to Your Journal")
-        
-        with st.form("login_form"):
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            submit = st.form_submit_button("Login", use_container_width=True)
-            
-            if submit:
-                if username and password:
-                    user = authenticate_user(username, password)
-                    if user:
-                        st.session_state['user'] = user
-                        st.session_state['logged_in'] = True
-                        st.success(f"Welcome back, {user['display_name']}!")
-                        st.rerun()
-                    else:
-                        st.error("❌ Invalid username or password")
-                else:
-                    st.error("❌ Please fill in all fields")
-        
-        st.info("💡 Default account: `admin` / `Topfloor2025`")
-    
-    with tab2:
-        st.subheader("Create New Account")
-        
-        with st.form("register_form"):
-            new_username = st.text_input("Choose Username", key="reg_user")
-            new_display_name = st.text_input("Display Name", key="reg_display")
-            new_password = st.text_input("Choose Password", type="password", key="reg_pass")
-            new_password_confirm = st.text_input("Confirm Password", type="password", key="reg_pass_conf")
-            register = st.form_submit_button("Register", use_container_width=True)
-            
-            if register:
-                if new_username and new_display_name and new_password and new_password_confirm:
-                    if new_password != new_password_confirm:
-                        st.error("❌ Passwords don't match")
-                    elif len(new_password) < 6:
-                        st.error("❌ Password must be at least 6 characters")
-                    else:
-                        success, result = register_user(new_username, new_password, new_display_name)
-                        if success:
-                            st.success(f"✅ Account created! You can now login with username: {new_username}")
-                        else:
-                            st.error(f"❌ {result}")
-                else:
-                    st.error("❌ Please fill in all fields")
-
-# Check if user is logged in
-if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
-    login_page()
-    st.stop()
-
-# Get current user
-current_user = st.session_state['user']
-
-# ===== APP STARTS HERE (after login) =====
-
 # Configuration
 TRADES_FILE = "trades.json"
 ACCOUNTS_FILE = "accounts.json"
 SETTINGS_FILE = "settings.json"
 USERS_FILE = "users.json"
 ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
+
+# ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
 
 def load_users():
     """Load users from JSON file"""
@@ -126,6 +60,75 @@ def register_user(username, password, display_name):
     users.append(new_user)
     save_users(users)
     return True, new_user
+
+# ===== LOGIN PAGE =====
+
+def login_page():
+    """Display login page and handle authentication"""
+    
+    st.title("📈 Trading Journal Pro")
+    st.markdown("---")
+    
+    # Create tabs for login and register
+    tab1, tab2 = st.tabs(["🔑 Login", "📝 Register"])
+    
+    with tab1:
+        st.subheader("Login to Your Journal")
+        
+        with st.form("login_form"):
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            submit = st.form_submit_button("Login", use_container_width=True)
+            
+            if submit:
+                if username and password:
+                    user = authenticate_user(username, password)
+                    if user:
+                        st.session_state['user'] = user
+                        st.session_state['logged_in'] = True
+                        st.success(f"Welcome back, {user['display_name']}!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Invalid username or password")
+                else:
+                    st.error("❌ Please fill in all fields")
+    
+    with tab2:
+        st.subheader("Create New Account")
+        
+        with st.form("register_form"):
+            new_username = st.text_input("Choose Username", key="reg_user")
+            new_display_name = st.text_input("Display Name", key="reg_display")
+            new_password = st.text_input("Choose Password", type="password", key="reg_pass")
+            new_password_confirm = st.text_input("Confirm Password", type="password", key="reg_pass_conf")
+            register = st.form_submit_button("Register", use_container_width=True)
+            
+            if register:
+                if new_username and new_display_name and new_password and new_password_confirm:
+                    if new_password != new_password_confirm:
+                        st.error("❌ Passwords don't match")
+                    elif len(new_password) < 6:
+                        st.error("❌ Password must be at least 6 characters")
+                    else:
+                        success, result = register_user(new_username, new_password, new_display_name)
+                        if success:
+                            st.success(f"✅ Account created! You can now login with username: {new_username}")
+                        else:
+                            st.error(f"❌ {result}")
+                else:
+                    st.error("❌ Please fill in all fields")
+
+# ===== CHECK LOGIN STATUS =====
+
+# Check if user is logged in
+if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
+    login_page()
+    st.stop()
+
+# Get current user
+current_user = st.session_state['user']
+
+# ===== APP STARTS HERE (after login) =====
 
 def load_settings():
     """Load app settings"""
