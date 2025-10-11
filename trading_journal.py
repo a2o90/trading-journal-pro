@@ -15,7 +15,7 @@ NOTES_FILE = "daily_notes.json"
 ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
 
 # App Version
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.1.0"
 LAST_UPDATE = "2025-10-11"
 
 # ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
@@ -440,25 +440,109 @@ dark_mode = settings.get('dark_mode', True)
 # Custom CSS for better styling with dark/light mode support
 if dark_mode:
     bg_color = "#0E1117"
+    secondary_bg = "#262730"
     text_color = "#FAFAFA"
     card_bg = "#262730"
     border_color = "#38383d"
+    input_bg = "#262730"
+    hover_color = "#38383d"
 else:
     bg_color = "#FFFFFF"
+    secondary_bg = "#F0F2F6"
     text_color = "#31333F"
-    card_bg = "#F0F2F6"
-    border_color = "#E0E0E0"
+    card_bg = "#FFFFFF"
+    border_color = "#D3D3D3"
+    input_bg = "#FFFFFF"
+    hover_color = "#E8E8E8"
 
 st.markdown(f"""
 <style>
+    /* Main background */
+    .stApp {{
+        background-color: {bg_color};
+        color: {text_color};
+    }}
+    
+    /* Sidebar */
+    [data-testid="stSidebar"] {{
+        background-color: {secondary_bg};
+    }}
+    
+    /* All text */
+    .stMarkdown, p, span, label, .stTextInput label, .stTextArea label, 
+    .stSelectbox label, .stDateInput label, .stNumberInput label {{
+        color: {text_color} !important;
+    }}
+    
+    /* Input fields */
+    .stTextInput > div > div > input,
+    .stTextArea > div > div > textarea,
+    .stNumberInput > div > div > input,
+    .stSelectbox > div > div,
+    .stDateInput > div > div > div {{
+        background-color: {input_bg} !important;
+        color: {text_color} !important;
+        border-color: {border_color} !important;
+    }}
+    
+    /* Buttons */
+    .stButton > button {{
+        background-color: {card_bg};
+        color: {text_color};
+        border: 1px solid {border_color};
+    }}
+    
+    .stButton > button:hover {{
+        background-color: {hover_color};
+        border-color: {text_color};
+    }}
+    
+    /* Metrics */
+    [data-testid="stMetricValue"] {{
+        color: {text_color} !important;
+    }}
+    
+    /* Dataframes */
+    .stDataFrame {{
+        background-color: {card_bg};
+    }}
+    
+    /* Expanders */
+    .streamlit-expanderHeader {{
+        background-color: {card_bg};
+        color: {text_color};
+        border: 1px solid {border_color};
+    }}
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {{
+        gap: 24px;
+        background-color: {secondary_bg};
+    }}
+    
+    .stTabs [data-baseweb="tab"] {{
+        height: 50px;
+        padding-left: 20px;
+        padding-right: 20px;
+        background-color: {card_bg};
+        color: {text_color};
+    }}
+    
+    .stTabs [data-baseweb="tab"]:hover {{
+        background-color: {hover_color};
+    }}
+    
+    /* Custom classes */
     .profit-positive {{
         color: #00ff00;
         font-weight: bold;
     }}
+    
     .profit-negative {{
         color: #ff4444;
         font-weight: bold;
     }}
+    
     .metric-card {{
         background-color: {card_bg};
         padding: 20px;
@@ -466,14 +550,7 @@ st.markdown(f"""
         margin: 10px 0;
         border: 1px solid {border_color};
     }}
-    .stTabs [data-baseweb="tab-list"] {{
-        gap: 24px;
-    }}
-    .stTabs [data-baseweb="tab"] {{
-        height: 50px;
-        padding-left: 20px;
-        padding-right: 20px;
-    }}
+    
     .version-badge {{
         background-color: {card_bg};
         padding: 8px 12px;
@@ -481,6 +558,21 @@ st.markdown(f"""
         border: 1px solid {border_color};
         font-size: 12px;
         text-align: center;
+        color: {text_color};
+    }}
+    
+    /* Form containers */
+    .stForm {{
+        background-color: {card_bg};
+        border: 1px solid {border_color};
+        padding: 20px;
+        border-radius: 10px;
+    }}
+    
+    /* Info/Warning/Success boxes */
+    .stAlert {{
+        background-color: {card_bg};
+        border: 1px solid {border_color};
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -887,7 +979,7 @@ with st.sidebar:
     st.header("📊 Filters")
 
 # Create tabs
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["📝 Add Trade", "📊 All Trades", "📅 Calendar", "💰 Per Symbol", "🧠 Psychology", "📔 Daily Journal"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(["📝 Add Trade", "📊 All Trades", "📅 Calendar", "💰 Per Symbol", "🧠 Psychology", "📔 Daily Journal", "🎬 Trade Replay", "👨‍🏫 Mentor Mode"])
 
 # TAB 1: Add New Trade
 with tab1:
@@ -2107,6 +2199,261 @@ if trades:
                             st.rerun()
         else:
             st.info("📝 No daily notes yet. Start journaling to track your trading journey!")
+    
+    # TAB 7: Trade Replay
+    with tab7:
+        st.header("🎬 Trade Replay")
+        st.info("💡 Replay your trading journey chronologically and see how your strategy evolved")
+        
+        if len(df) > 0:
+            # Replay controls
+            col1, col2, col3 = st.columns([2, 1, 1])
+            
+            with col1:
+                replay_speed = st.slider("Replay Speed (trades per view)", 1, 50, 10, key="replay_speed")
+            
+            with col2:
+                replay_symbol_filter = st.multiselect(
+                    "Filter Symbols",
+                    all_symbols,
+                    default=all_symbols,
+                    key="replay_symbols"
+                )
+            
+            with col3:
+                st.write("")
+                st.write("")
+                auto_play = st.checkbox("Auto-play", key="auto_play")
+            
+            # Filter trades for replay
+            replay_df = df[df['symbol'].isin(replay_symbol_filter)].copy()
+            replay_df = replay_df.sort_values('date')
+            
+            if len(replay_df) > 0:
+                # Trade counter slider
+                max_trades = len(replay_df)
+                trades_shown = st.slider(
+                    "Progress",
+                    0,
+                    max_trades,
+                    max_trades,
+                    key="replay_progress",
+                    help=f"Slide to replay your trading journey (Total: {max_trades} trades)"
+                )
+                
+                # Get trades up to selected point
+                replay_subset = replay_df.iloc[:trades_shown]
+                
+                st.divider()
+                
+                # Show progress metrics
+                if trades_shown > 0:
+                    col1, col2, col3, col4, col5 = st.columns(5)
+                    
+                    replay_metrics = calculate_metrics(replay_subset)
+                    
+                    with col1:
+                        st.metric("Trades Shown", trades_shown)
+                    with col2:
+                        st.metric("Total P&L", f"{currency}{replay_metrics['total_profit']:.2f}")
+                    with col3:
+                        st.metric("Win Rate", f"{replay_metrics['win_rate']:.1f}%")
+                    with col4:
+                        st.metric("Wins", replay_metrics['winning_trades'])
+                    with col5:
+                        st.metric("Losses", replay_metrics['losing_trades'])
+                    
+                    st.divider()
+                    
+                    # Replay charts
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.subheader("📈 Equity Curve Evolution")
+                        fig, ax = plt.subplots(figsize=(10, 5))
+                        replay_chart = replay_subset.copy()
+                        replay_chart['cumulative_pnl'] = replay_chart['pnl'].cumsum()
+                        
+                        ax.plot(replay_chart['date'], replay_chart['cumulative_pnl'], 
+                               marker='o', linewidth=2, markersize=4, color='#00ff88')
+                        ax.axhline(y=0, color='red', linestyle='--', alpha=0.5)
+                        ax.fill_between(replay_chart['date'], replay_chart['cumulative_pnl'], 0, 
+                                       alpha=0.2, color='#00ff88')
+                        ax.set_xlabel('Date')
+                        ax.set_ylabel(f'Cumulative P&L ({currency})')
+                        ax.set_title(f'Your Journey: First {trades_shown} Trades')
+                        ax.grid(True, alpha=0.3)
+                        plt.xticks(rotation=45)
+                        plt.tight_layout()
+                        st.pyplot(fig)
+                    
+                    with col2:
+                        st.subheader("📊 Performance Breakdown")
+                        # Show win/loss distribution
+                        wins = replay_metrics['winning_trades']
+                        losses = replay_metrics['losing_trades']
+                        
+                        if wins + losses > 0:
+                            fig, ax = plt.subplots(figsize=(10, 5))
+                            ax.pie([wins, losses], labels=['Wins', 'Losses'], 
+                                  colors=['#00ff88', '#ff4444'],
+                                  autopct='%1.1f%%', startangle=90)
+                            ax.set_title(f'Win/Loss Ratio at Trade {trades_shown}')
+                            st.pyplot(fig)
+                    
+                    st.divider()
+                    
+                    # Recent trades in replay
+                    st.subheader(f"📋 Last {min(10, trades_shown)} Trades")
+                    recent_replay = replay_subset.tail(10).sort_values('date', ascending=False)
+                    
+                    for idx, row in recent_replay.iterrows():
+                        col1, col2, col3, col4, col5, col6 = st.columns([2, 1.5, 1, 1.5, 1.5, 2])
+                        
+                        with col1:
+                            st.text(row['date'].strftime('%Y-%m-%d'))
+                        with col2:
+                            st.text(f"**{row['symbol']}**")
+                        with col3:
+                            st.text(row['side'])
+                        with col4:
+                            st.text(f"{currency}{row['entry_price']:.2f}")
+                        with col5:
+                            pnl_color = "🟢" if row['pnl'] > 0 else "🔴"
+                            st.markdown(f"{pnl_color} **{currency}{row['pnl']:.2f}**")
+                        with col6:
+                            st.text(row['setup'])
+                else:
+                    st.info("👈 Use the slider to replay your trades")
+            else:
+                st.info("No trades match your filter selection")
+        else:
+            st.info("🎬 Add some trades to use Trade Replay!")
+    
+    # TAB 8: Mentor Mode
+    with tab8:
+        st.header("👨‍🏫 Mentor Mode")
+        st.info("💡 Share your journal with a mentor or coach for feedback and accountability")
+        
+        # Mentor mode settings
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.subheader("📤 Share Your Journal")
+            
+            share_enabled = st.checkbox(
+                "Enable Journal Sharing",
+                key="mentor_share_enabled",
+                help="Allow a mentor to view your trades and provide feedback"
+            )
+            
+            if share_enabled:
+                # Generate shareable code (using user ID for simplicity)
+                share_code = f"TJ-{current_user['id']}-{current_user['username'][:4].upper()}"
+                
+                st.success(f"**Your Share Code:** `{share_code}`")
+                st.caption("Share this code with your mentor. They can use it to view your journal.")
+                
+                # Display what mentor can see
+                with st.expander("👁️ What can mentors see?", expanded=False):
+                    st.markdown("""
+                    **Your mentor will be able to see:**
+                    - ✅ All your trades and performance metrics
+                    - ✅ Charts and analytics
+                    - ✅ Psychology analysis
+                    - ✅ Daily journal notes
+                    
+                    **Your mentor will NOT be able to:**
+                    - ❌ Edit or delete your trades
+                    - ❌ See your account balances
+                    - ❌ Access your password or personal info
+                    """)
+            else:
+                st.warning("⚠️ Journal sharing is currently disabled")
+        
+        with col2:
+            st.subheader("📊 Mentor Stats")
+            
+            if share_enabled:
+                st.metric("Share Status", "🟢 Active")
+                st.metric("Share Code", share_code)
+            else:
+                st.metric("Share Status", "🔴 Inactive")
+        
+        st.divider()
+        
+        # View as Mentor section (for admin)
+        if current_user['username'] == 'admin':
+            st.subheader("👨‍🏫 View Student Journals (Admin)")
+            
+            all_users = load_users()
+            other_users = [u for u in all_users if u['id'] != current_user['id']]
+            
+            if len(other_users) > 0:
+                selected_student = st.selectbox(
+                    "Select Student",
+                    other_users,
+                    format_func=lambda u: f"{u['display_name']} (@{u['username']})",
+                    key="mentor_student_select"
+                )
+                
+                if selected_student:
+                    student_trades = load_trades(selected_student['id'])
+                    
+                    if len(student_trades) > 0:
+                        student_df = pd.DataFrame(student_trades)
+                        student_df['date'] = pd.to_datetime(student_df['date'])
+                        student_df = student_df.sort_values('date', ascending=False)
+                        
+                        # Show student metrics
+                        st.info(f"📊 **{selected_student['display_name']}'s** Performance")
+                        
+                        student_metrics = calculate_metrics(student_df)
+                        
+                        col1, col2, col3, col4 = st.columns(4)
+                        with col1:
+                            st.metric("Total Trades", student_metrics['total_trades'])
+                        with col2:
+                            st.metric("Win Rate", f"{student_metrics['win_rate']:.1f}%")
+                        with col3:
+                            st.metric("Total P&L", f"{currency}{student_metrics['total_profit']:.2f}")
+                        with col4:
+                            st.metric("Profit Factor", f"{student_metrics['profit_factor']:.2f}")
+                        
+                        st.divider()
+                        
+                        # Show recent trades
+                        st.subheader("📋 Recent Trades")
+                        recent_student_trades = student_df.head(10)
+                        
+                        for idx, row in recent_student_trades.iterrows():
+                            with st.expander(f"{row['date'].strftime('%Y-%m-%d')} - {row['symbol']} ({row['side']}) - {currency}{row['pnl']:.2f}"):
+                                col1, col2, col3 = st.columns(3)
+                                
+                                with col1:
+                                    st.write(f"**Entry:** {currency}{row['entry_price']:.2f}")
+                                    st.write(f"**Exit:** {currency}{row['exit_price']:.2f}")
+                                    st.write(f"**Quantity:** {row['quantity']}")
+                                
+                                with col2:
+                                    st.write(f"**Setup:** {row['setup']}")
+                                    st.write(f"**Mood:** {row.get('mood', 'N/A')}")
+                                    st.write(f"**Confidence:** {row.get('pre_trade_confidence', 'N/A')}/5")
+                                
+                                with col3:
+                                    st.write(f"**P&L:** {currency}{row['pnl']:.2f}")
+                                    st.write(f"**R-Multiple:** {row['r_multiple']:.2f}R")
+                                    st.write(f"**Duration:** {row.get('duration_minutes', 0)} min")
+                                
+                                if row.get('notes'):
+                                    st.divider()
+                                    st.write(f"**Notes:** {row['notes']}")
+                    else:
+                        st.info(f"👤 {selected_student['display_name']} has no trades yet")
+            else:
+                st.info("👥 No other users to mentor yet")
+        else:
+            st.info("👨‍🏫 Mentor view is available for admin users")
 
 else:
     st.info("🎯 No trades yet. Add your first trade in the 'Add Trade' tab!")
