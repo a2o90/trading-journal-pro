@@ -15,7 +15,7 @@ NOTES_FILE = "daily_notes.json"
 ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
 
 # App Version
-APP_VERSION = "2.3.3"
+APP_VERSION = "2.4.0"
 LAST_UPDATE = "2025-10-11"
 
 # ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
@@ -1236,11 +1236,49 @@ with tab1:
         st.warning("🔒 **Read-Only Mode**")
         st.info("You are viewing this journal as a mentor. You cannot add new trades.")
         st.markdown("### 📊 Student's Recent Activity")
+        
         if len(trades) > 0:
-            # Get recent 5 trades
-            recent_trades_data = sorted(trades, key=lambda x: x.get('date', ''), reverse=True)[:5]
+            # Get recent 10 trades
+            recent_trades_data = sorted(trades, key=lambda x: x.get('date', ''), reverse=True)[:10]
+            
             for trade in recent_trades_data:
-                st.text(f"{trade['date']} - {trade['symbol']} {trade['side']} - {currency}{trade['pnl']:.2f}")
+                # Create detailed expander for each trade
+                pnl_emoji = "🟢" if trade['pnl'] > 0 else "🔴"
+                trade_title = f"{pnl_emoji} {trade['date']} - {trade['symbol']} {trade['side']} - {currency}{trade['pnl']:.2f} ({trade.get('r_multiple', 0):.2f}R)"
+                
+                with st.expander(trade_title, expanded=False):
+                    # Trade details in columns
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        st.markdown("**📊 Trade Info:**")
+                        st.text(f"Entry: {currency}{trade['entry_price']:.2f}")
+                        st.text(f"Exit: {currency}{trade['exit_price']:.2f}")
+                        st.text(f"Quantity: {trade['quantity']}")
+                        st.text(f"Duration: {trade.get('duration_minutes', 0)} min")
+                        st.text(f"Setup: {trade.get('setup', 'N/A')}")
+                    
+                    with col2:
+                        st.markdown("**🧠 Psychology:**")
+                        st.text(f"Mood: {trade.get('mood', 'N/A')}")
+                        st.text(f"Confidence: {trade.get('pre_trade_confidence', 'N/A')}/5")
+                        st.text(f"Focus: {trade.get('focus_level', 'N/A')}/5")
+                        st.text(f"Stress: {trade.get('stress_level', 'N/A')}/5")
+                        st.text(f"Sleep: {trade.get('sleep_quality', 'N/A')}/5")
+                    
+                    with col3:
+                        st.markdown("**📌 Context:**")
+                        st.text(f"Type: {trade.get('trade_type', 'N/A')}")
+                        st.text(f"Market: {trade.get('market_condition', 'N/A')}")
+                        if trade.get('influence'):
+                            st.text(f"Influence: {trade.get('influence', 'N/A')}")
+                        st.text(f"Account: {trade.get('account_name', 'N/A')}")
+                    
+                    # Notes section
+                    if trade.get('notes'):
+                        st.divider()
+                        st.markdown(f"**💭 Notes/Lessons:**")
+                        st.write(trade['notes'])
         else:
             st.info("No trades yet")
     else:
