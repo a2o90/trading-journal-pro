@@ -61,6 +61,18 @@ def register_user(username, password, display_name):
     save_users(users)
     return True, new_user
 
+def change_password(user_id, new_password):
+    """Change password for a user"""
+    users = load_users()
+    
+    for user in users:
+        if user['id'] == user_id:
+            user['password'] = new_password
+            save_users(users)
+            return True, "Password updated successfully"
+    
+    return False, "User not found"
+
 # ===== LOGIN PAGE =====
 
 def login_page():
@@ -427,8 +439,72 @@ with st.sidebar:
             with col3:
                 total_trades = sum([u['Total Trades'] for u in users_display])
                 st.metric("Total Trades", total_trades)
+            
+            st.divider()
+            
+            # Reset user password section
+            st.subheader("🔑 Reset User Password")
+            
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                user_to_reset = st.selectbox(
+                    "Select User",
+                    all_users,
+                    format_func=lambda u: f"{u['username']} ({u['display_name']})",
+                    key="admin_reset_user"
+                )
+            
+            with col2:
+                st.write("")
+                st.write("")
+            
+            new_pass_admin = st.text_input("New Password", type="password", key="admin_new_pass")
+            
+            if st.button("🔄 Reset Password", type="primary", use_container_width=True):
+                if new_pass_admin and len(new_pass_admin) >= 6:
+                    success, message = change_password(user_to_reset['id'], new_pass_admin)
+                    if success:
+                        st.success(f"✅ Password reset for {user_to_reset['username']}")
+                    else:
+                        st.error(f"❌ {message}")
+                else:
+                    st.error("❌ Password must be at least 6 characters")
         
         st.divider()
+    
+    # Change Password section (for all users)
+    with st.expander("🔐 Change My Password", expanded=False):
+        st.subheader("Change Your Password")
+        
+        with st.form("change_password_form"):
+            old_password = st.text_input("Current Password", type="password", key="old_pass")
+            new_password = st.text_input("New Password", type="password", key="new_pass")
+            confirm_password = st.text_input("Confirm New Password", type="password", key="confirm_pass")
+            
+            submit_pass = st.form_submit_button("🔄 Change Password", use_container_width=True)
+            
+            if submit_pass:
+                if old_password and new_password and confirm_password:
+                    # Verify old password
+                    if old_password != current_user['password']:
+                        st.error("❌ Current password is incorrect")
+                    elif new_password != confirm_password:
+                        st.error("❌ New passwords don't match")
+                    elif len(new_password) < 6:
+                        st.error("❌ Password must be at least 6 characters")
+                    else:
+                        success, message = change_password(current_user['id'], new_password)
+                        if success:
+                            st.success("✅ Password changed successfully! Please login again.")
+                            # Update session
+                            current_user['password'] = new_password
+                            st.session_state['user'] = current_user
+                        else:
+                            st.error(f"❌ {message}")
+                else:
+                    st.error("❌ Please fill in all fields")
+    
+    st.divider()
     
     st.header("💼 Account Management")
     
