@@ -22,8 +22,13 @@ def load_users():
             with open(USERS_FILE, 'r') as f:
                 return json.load(f)
         except:
-            return [{"id": 0, "username": "admin", "password": "Topfloor2025!!!", "display_name": "Admin", "created_at": datetime.now().strftime('%Y-%m-%d')}]
-    return [{"id": 0, "username": "admin", "password": "Topfloor2025!!!", "display_name": "Admin", "created_at": datetime.now().strftime('%Y-%m-%d')}]
+            # Get admin password from environment variable or use default
+            admin_pass = os.environ.get('ADMIN_PASSWORD', 'ChangeMe123!')
+            return [{"id": 0, "username": "admin", "password": admin_pass, "display_name": "Admin", "created_at": datetime.now().strftime('%Y-%m-%d')}]
+    
+    # Get admin password from environment variable or use default
+    admin_pass = os.environ.get('ADMIN_PASSWORD', 'ChangeMe123!')
+    return [{"id": 0, "username": "admin", "password": admin_pass, "display_name": "Admin", "created_at": datetime.now().strftime('%Y-%m-%d')}]
 
 def save_users(users):
     """Save users to JSON file"""
