@@ -15,7 +15,7 @@ NOTES_FILE = "daily_notes.json"
 ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
 
 # App Version
-APP_VERSION = "2.2.0"
+APP_VERSION = "2.3.0"
 LAST_UPDATE = "2025-10-11"
 
 # ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
@@ -110,6 +110,75 @@ def login_page():
         </p>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Feature Highlights
+    st.markdown("### ✨ Latest Features")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div style='background-color: rgba(38, 39, 48, 0.5); padding: 15px; border-radius: 10px; 
+                    border: 1px solid rgba(0, 255, 136, 0.3); height: 180px;'>
+            <h4 style='color: #00ff88; margin-top: 0;'>🎬 Trade Replay</h4>
+            <p style='font-size: 14px; line-height: 1.6;'>
+                Replay your trading journey chronologically. Visualize entry/exit points 
+                and see how your strategy evolved over time.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div style='background-color: rgba(38, 39, 48, 0.5); padding: 15px; border-radius: 10px; 
+                    border: 1px solid rgba(0, 136, 255, 0.3); height: 180px;'>
+            <h4 style='color: #0088ff; margin-top: 0;'>👨‍🏫 Mentor Mode</h4>
+            <p style='font-size: 14px; line-height: 1.6;'>
+                Share your journal with coaches using a unique code. Mentors get 
+                read-only access to review your trades and provide feedback.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div style='background-color: rgba(38, 39, 48, 0.5); padding: 15px; border-radius: 10px; 
+                    border: 1px solid rgba(255, 136, 0, 0.3); height: 180px;'>
+            <h4 style='color: #ff8800; margin-top: 0;'>📊 Advanced Analytics</h4>
+            <p style='font-size: 14px; line-height: 1.6;'>
+                Max Drawdown, Sharpe Ratio, Profit Factor, Day of Week analysis, 
+                Psychology insights, and more professional metrics.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.write("")
+    
+    # Additional features in compact format
+    with st.expander("🚀 More Features", expanded=False):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            **Core Features:**
+            - 📝 Multi-user system with private journals
+            - 💼 Multiple trading accounts
+            - 📅 Calendar view with daily P&L
+            - 🧠 Psychology & mood tracking
+            - 📔 Daily journal notes
+            - 💱 Multi-currency support ($/€)
+            """)
+        
+        with col2:
+            st.markdown("""
+            **Analytics & Charts:**
+            - 📈 Equity curve & drawdown chart
+            - 📊 Monthly performance breakdown
+            - 💰 Profit by symbol analysis
+            - 📅 Best day of week insights
+            - 🎯 R-multiple tracking
+            - 📥 CSV export with filters
+            """)
     
     st.markdown("---")
     
@@ -2413,6 +2482,69 @@ if trades:
                                   autopct='%1.1f%%', startangle=90)
                             ax.set_title(f'Win/Loss Ratio at Trade {trades_shown}')
                             st.pyplot(fig)
+                    
+                    st.divider()
+                    
+                    # Trade Timeline Chart - Visual of Entry/Exit points
+                    st.subheader("📍 Trade Entry/Exit Timeline")
+                    
+                    fig, ax = plt.subplots(figsize=(14, 6))
+                    
+                    # Plot each trade with entry and exit points
+                    for idx, row in replay_subset.iterrows():
+                        trade_date = row['date']
+                        entry_price = row['entry_price']
+                        exit_price = row['exit_price']
+                        is_win = row['pnl'] > 0
+                        
+                        # Color based on win/loss
+                        color = '#00ff88' if is_win else '#ff4444'
+                        marker_entry = '^' if row['side'] == 'Long' else 'v'
+                        marker_exit = 'v' if row['side'] == 'Long' else '^'
+                        
+                        # Plot entry point
+                        ax.scatter(trade_date, entry_price, color=color, marker=marker_entry, 
+                                 s=150, alpha=0.7, edgecolors='white', linewidth=2, zorder=3)
+                        
+                        # Plot exit point
+                        ax.scatter(trade_date, exit_price, color=color, marker=marker_exit, 
+                                 s=150, alpha=0.7, edgecolors='white', linewidth=2, zorder=3)
+                        
+                        # Draw line connecting entry to exit
+                        ax.plot([trade_date, trade_date], [entry_price, exit_price], 
+                               color=color, linewidth=2, alpha=0.5, zorder=2)
+                        
+                        # Add symbol label
+                        mid_price = (entry_price + exit_price) / 2
+                        ax.text(trade_date, mid_price, row['symbol'], 
+                               fontsize=8, ha='right', va='center', 
+                               bbox=dict(boxstyle='round,pad=0.3', facecolor=color, alpha=0.3))
+                    
+                    ax.set_xlabel('Date', fontsize=12)
+                    ax.set_ylabel('Price', fontsize=12)
+                    ax.set_title('Entry/Exit Points Timeline\n(▲ = Entry Long/Exit Short | ▼ = Exit Long/Entry Short)', 
+                                fontsize=14, fontweight='bold')
+                    ax.grid(True, alpha=0.3, linestyle='--')
+                    
+                    # Legend
+                    from matplotlib.patches import Patch
+                    legend_elements = [
+                        Patch(facecolor='#00ff88', label='Winning Trade'),
+                        Patch(facecolor='#ff4444', label='Losing Trade')
+                    ]
+                    ax.legend(handles=legend_elements, loc='upper left')
+                    
+                    plt.xticks(rotation=45)
+                    plt.tight_layout()
+                    st.pyplot(fig)
+                    
+                    st.caption("""
+                    **How to read:**
+                    - **Green** = Winning trades | **Red** = Losing trades
+                    - **▲** = Entry (Long) or Exit (Short)
+                    - **▼** = Exit (Long) or Entry (Short)
+                    - **Line** connects entry to exit for each trade
+                    """)
                     
                     st.divider()
                     
