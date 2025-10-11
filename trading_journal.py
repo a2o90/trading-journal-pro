@@ -374,24 +374,59 @@ with st.sidebar:
     # Admin Panel (only visible to admin user)
     if current_user['username'] == 'admin':
         with st.expander("👑 Admin Panel", expanded=False):
-            st.subheader("📋 Registered Users")
+            st.subheader("📋 Registered Users & Activity")
             
             all_users = load_users()
+            all_trades_data = load_trades()  # Load all trades without filter
             
-            # Create a DataFrame for better display
+            # Create a DataFrame for better display with activity stats
             users_display = []
             for user in all_users:
+                # Get trades for this user
+                user_trades = [t for t in all_trades_data if t.get('user_id') == user['id']]
+                
+                # Calculate stats
+                num_trades = len(user_trades)
+                
+                if num_trades > 0:
+                    # Count unique trading days
+                    trade_dates = [pd.to_datetime(t['date']).date() for t in user_trades]
+                    unique_days = len(set(trade_dates))
+                    
+                    # Get last activity
+                    latest_trade = max([pd.to_datetime(t['date']) for t in user_trades])
+                    last_activity = latest_trade.strftime('%Y-%m-%d')
+                else:
+                    unique_days = 0
+                    last_activity = 'No activity'
+                
                 users_display.append({
                     'ID': user['id'],
                     'Username': user['username'],
                     'Display Name': user['display_name'],
-                    'Created': user.get('created_at', 'N/A')
+                    'Registered': user.get('created_at', 'N/A'),
+                    'Total Trades': num_trades,
+                    'Trading Days': unique_days,
+                    'Last Activity': last_activity
                 })
             
             users_df = pd.DataFrame(users_display)
+            
+            # Sort by number of trades (most active first)
+            users_df = users_df.sort_values('Total Trades', ascending=False)
+            
             st.dataframe(users_df, use_container_width=True, hide_index=True)
             
-            st.caption(f"Total users: {len(all_users)}")
+            # Summary stats
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total Users", len(all_users))
+            with col2:
+                active_users = len([u for u in users_display if u['Total Trades'] > 0])
+                st.metric("Active Users", active_users)
+            with col3:
+                total_trades = sum([u['Total Trades'] for u in users_display])
+                st.metric("Total Trades", total_trades)
         
         st.divider()
     
