@@ -217,7 +217,7 @@ def load_trades(user_id=None):
 
 def save_trades(trades):
     """Save trades to JSON file"""
-    with open(trades_FILE, 'w') as f:
+    with open(TRADES_FILE, 'w') as f:
         json.dump(trades, f, indent=2)
 
 def delete_trade(trade_id):
