@@ -15,7 +15,7 @@ NOTES_FILE = "daily_notes.json"
 ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
 
 # App Version
-APP_VERSION = "2.4.0"
+APP_VERSION = "2.4.1"
 LAST_UPDATE = "2025-10-11"
 
 # ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
@@ -192,19 +192,19 @@ def login_page():
             username = st.text_input("Username")
             password = st.text_input("Password", type="password")
             submit = st.form_submit_button("Login", use_container_width=True)
-            
-            if submit:
-                if username and password:
-                    user = authenticate_user(username, password)
-                    if user:
-                        st.session_state['user'] = user
-                        st.session_state['logged_in'] = True
-                        st.success(f"Welcome back, {user['display_name']}!")
-                        st.rerun()
-                    else:
-                        st.error("❌ Invalid username or password")
+        
+        # Handle login outside form to prevent message conflicts
+        if submit:
+            if username and password:
+                user = authenticate_user(username, password)
+                if user:
+                    st.session_state['user'] = user
+                    st.session_state['logged_in'] = True
+                    st.rerun()  # Immediate rerun
                 else:
-                    st.error("❌ Please fill in all fields")
+                    st.error("❌ Invalid username or password")
+            else:
+                st.error("❌ Please fill in all fields")
     
     with tab2:
         st.subheader("Create New Account")
@@ -215,21 +215,22 @@ def login_page():
             new_password = st.text_input("Choose Password", type="password", key="reg_pass")
             new_password_confirm = st.text_input("Confirm Password", type="password", key="reg_pass_conf")
             register = st.form_submit_button("Register", use_container_width=True)
-            
-            if register:
-                if new_username and new_display_name and new_password and new_password_confirm:
-                    if new_password != new_password_confirm:
-                        st.error("❌ Passwords don't match")
-                    elif len(new_password) < 6:
-                        st.error("❌ Password must be at least 6 characters")
-                    else:
-                        success, result = register_user(new_username, new_password, new_display_name)
-                        if success:
-                            st.success(f"✅ Account created! You can now login with username: {new_username}")
-                        else:
-                            st.error(f"❌ {result}")
+        
+        # Handle registration outside form to prevent message conflicts
+        if register:
+            if new_username and new_display_name and new_password and new_password_confirm:
+                if new_password != new_password_confirm:
+                    st.error("❌ Passwords don't match")
+                elif len(new_password) < 6:
+                    st.error("❌ Password must be at least 6 characters")
                 else:
-                    st.error("❌ Please fill in all fields")
+                    success, result = register_user(new_username, new_password, new_display_name)
+                    if success:
+                        st.success(f"✅ Account created! You can now login with username: {new_username}")
+                    else:
+                        st.error(f"❌ {result}")
+            else:
+                st.error("❌ Please fill in all fields")
     
     with tab3:
         st.subheader("🎓 Mentor/Coach Access")
@@ -239,39 +240,41 @@ def login_page():
             share_code = st.text_input("Enter Share Code", placeholder="e.g. TJ-1-A2O9")
             mentor_name = st.text_input("Your Name (Optional)", placeholder="e.g. Coach John")
             access_submit = st.form_submit_button("📊 Access Journal", use_container_width=True)
-            
-            if access_submit:
-                if share_code:
-                    # Decode share code: TJ-{user_id}-{username_prefix}
-                    try:
-                        parts = share_code.strip().upper().split('-')
-                        if len(parts) == 3 and parts[0] == 'TJ':
-                            student_id = int(parts[1])
-                            
-                            # Find user by ID
-                            all_users = load_users()
-                            student_user = None
-                            for u in all_users:
-                                if u['id'] == student_id:
-                                    student_user = u
-                                    break
-                            
-                            if student_user:
-                                # Create mentor session
-                                st.session_state['user'] = student_user
-                                st.session_state['logged_in'] = True
-                                st.session_state['mentor_mode'] = True
-                                st.session_state['mentor_name'] = mentor_name if mentor_name else "Mentor"
-                                st.success(f"✅ Access granted! Viewing {student_user['display_name']}'s journal")
-                                st.rerun()
-                            else:
-                                st.error("❌ Invalid share code - Student not found")
+        
+        # Handle form submission OUTSIDE the form to prevent message conflicts
+        if access_submit:
+            if share_code:
+                # Decode share code: TJ-{user_id}-{username_prefix}
+                try:
+                    parts = share_code.strip().upper().split('-')
+                    if len(parts) == 3 and parts[0] == 'TJ':
+                        student_id = int(parts[1])
+                        
+                        # Find user by ID
+                        all_users = load_users()
+                        student_user = None
+                        for u in all_users:
+                            if u['id'] == student_id:
+                                student_user = u
+                                break
+                        
+                        if student_user:
+                            # Create mentor session
+                            st.session_state['user'] = student_user
+                            st.session_state['logged_in'] = True
+                            st.session_state['mentor_mode'] = True
+                            st.session_state['mentor_name'] = mentor_name if mentor_name else "Mentor"
+                            st.rerun()  # Immediate rerun, no success message needed here
                         else:
-                            st.error("❌ Invalid share code format. Use format: TJ-X-XXXX")
-                    except:
-                        st.error("❌ Invalid share code format")
-                else:
-                    st.error("❌ Please enter a share code")
+                            st.error("❌ Invalid share code - Student not found")
+                    else:
+                        st.error("❌ Invalid share code format. Use format: TJ-X-XXXX")
+                except ValueError:
+                    st.error("❌ Invalid share code - User ID must be a number")
+                except Exception as e:
+                    st.error("❌ Invalid share code format. Please check and try again.")
+            else:
+                st.error("❌ Please enter a share code")
         
         st.divider()
         
