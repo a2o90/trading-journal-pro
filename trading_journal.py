@@ -14,6 +14,10 @@ USERS_FILE = "users.json"
 NOTES_FILE = "daily_notes.json"
 ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
 
+# App Version
+APP_VERSION = "2.0.0"
+LAST_UPDATE = "2025-10-11"
+
 # ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
 
 def load_users():
@@ -153,10 +157,16 @@ def load_settings():
     if os.path.exists(SETTINGS_FILE):
         try:
             with open(SETTINGS_FILE, 'r') as f:
-                return json.load(f)
+                settings = json.load(f)
+                # Add default values if not present
+                if 'currency' not in settings:
+                    settings['currency'] = "$"
+                if 'dark_mode' not in settings:
+                    settings['dark_mode'] = True
+                return settings
         except:
-            return {"currency": "$"}
-    return {"currency": "$"}
+            return {"currency": "$", "dark_mode": True}
+    return {"currency": "$", "dark_mode": True}
 
 def save_settings(settings):
     """Save app settings"""
@@ -423,35 +433,65 @@ def create_calendar_view(df, year, month):
 # Streamlit App
 st.set_page_config(page_title="Trading Journal Pro", layout="wide", page_icon="📈")
 
-# Custom CSS for better styling
-st.markdown("""
+# Load settings for dark mode
+settings = load_settings()
+dark_mode = settings.get('dark_mode', True)
+
+# Custom CSS for better styling with dark/light mode support
+if dark_mode:
+    bg_color = "#0E1117"
+    text_color = "#FAFAFA"
+    card_bg = "#262730"
+    border_color = "#38383d"
+else:
+    bg_color = "#FFFFFF"
+    text_color = "#31333F"
+    card_bg = "#F0F2F6"
+    border_color = "#E0E0E0"
+
+st.markdown(f"""
 <style>
-    .profit-positive {
+    .profit-positive {{
         color: #00ff00;
         font-weight: bold;
-    }
-    .profit-negative {
+    }}
+    .profit-negative {{
         color: #ff4444;
         font-weight: bold;
-    }
-    .metric-card {
-        background-color: #1e1e1e;
+    }}
+    .metric-card {{
+        background-color: {card_bg};
         padding: 20px;
         border-radius: 10px;
         margin: 10px 0;
-    }
-    .stTabs [data-baseweb="tab-list"] {
+        border: 1px solid {border_color};
+    }}
+    .stTabs [data-baseweb="tab-list"] {{
         gap: 24px;
-    }
-    .stTabs [data-baseweb="tab"] {
+    }}
+    .stTabs [data-baseweb="tab"] {{
         height: 50px;
         padding-left: 20px;
         padding-right: 20px;
-    }
+    }}
+    .version-badge {{
+        background-color: {card_bg};
+        padding: 8px 12px;
+        border-radius: 5px;
+        border: 1px solid {border_color};
+        font-size: 12px;
+        text-align: center;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
 st.title("📈 Trading Journal Pro")
+st.markdown(f"""
+<div class="version-badge">
+    <strong>Version {APP_VERSION}</strong> | Last Updated: {LAST_UPDATE}
+</div>
+""", unsafe_allow_html=True)
+st.write("")
 
 # Force reload data on each run (prevents deleted trades from coming back)
 if 'force_reload' in st.session_state:
@@ -471,6 +511,24 @@ with st.sidebar:
         st.session_state['logged_in'] = False
         del st.session_state['user']
         st.rerun()
+    
+    st.divider()
+    
+    # Theme Toggle
+    st.subheader("⚙️ Appearance")
+    theme_col1, theme_col2 = st.columns(2)
+    
+    with theme_col1:
+        if st.button("🌙 Dark", use_container_width=True, type="primary" if dark_mode else "secondary"):
+            settings['dark_mode'] = True
+            save_settings(settings)
+            st.rerun()
+    
+    with theme_col2:
+        if st.button("☀️ Light", use_container_width=True, type="primary" if not dark_mode else "secondary"):
+            settings['dark_mode'] = False
+            save_settings(settings)
+            st.rerun()
     
     st.divider()
     
