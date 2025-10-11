@@ -11,6 +11,7 @@ TRADES_FILE = "trades.json"
 ACCOUNTS_FILE = "accounts.json"
 SETTINGS_FILE = "settings.json"
 USERS_FILE = "users.json"
+NOTES_FILE = "daily_notes.json"
 ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
 
 # ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
@@ -247,6 +248,60 @@ def delete_trade(trade_id):
     save_trades(trades)
     return True
 
+def load_daily_notes(user_id=None):
+    """Load daily notes from JSON file"""
+    if os.path.exists(NOTES_FILE):
+        try:
+            with open(NOTES_FILE, 'r') as f:
+                notes = json.load(f)
+                # Filter by user_id if specified
+                if user_id is not None:
+                    notes = [n for n in notes if n.get('user_id') == user_id]
+                return notes
+        except:
+            return []
+    return []
+
+def save_daily_notes(notes):
+    """Save daily notes to JSON file"""
+    with open(NOTES_FILE, 'w') as f:
+        json.dump(notes, f, indent=2)
+
+def add_daily_note(user_id, date, note_text, mood, energy_level):
+    """Add or update a daily note"""
+    all_notes = load_daily_notes()
+    
+    # Check if note for this date and user already exists
+    existing_note = None
+    for i, note in enumerate(all_notes):
+        if note['date'] == date and note.get('user_id') == user_id:
+            existing_note = i
+            break
+    
+    note_entry = {
+        'user_id': user_id,
+        'date': date,
+        'note': note_text,
+        'mood': mood,
+        'energy_level': energy_level,
+        'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    }
+    
+    if existing_note is not None:
+        all_notes[existing_note] = note_entry
+    else:
+        all_notes.append(note_entry)
+    
+    save_daily_notes(all_notes)
+    return True
+
+def delete_daily_note(user_id, date):
+    """Delete a daily note"""
+    all_notes = load_daily_notes()
+    all_notes = [n for n in all_notes if not (n['date'] == date and n.get('user_id') == user_id)]
+    save_daily_notes(all_notes)
+    return True
+
 def calculate_pnl(entry, exit, quantity, side):
     """Calculate profit/loss for a trade"""
     if side == "Long":
@@ -261,7 +316,7 @@ def calculate_r_multiple(pnl, account_size):
     return pnl / one_r if one_r > 0 else 0
 
 def calculate_metrics(df):
-    """Calculate trading metrics"""
+    """Calculate trading metrics including advanced metrics"""
     if len(df) == 0:
         return {
             'total_profit': 0,
@@ -271,7 +326,11 @@ def calculate_metrics(df):
             'winning_trades': 0,
             'losing_trades': 0,
             'avg_win': 0,
-            'avg_loss': 0
+            'avg_loss': 0,
+            'profit_factor': 0,
+            'sharpe_ratio': 0,
+            'max_drawdown': 0,
+            'max_drawdown_pct': 0
         }
     
     total_profit = df['pnl'].sum()
@@ -290,6 +349,29 @@ def calculate_metrics(df):
     else:
         Expectancy = 0
     
+    # Calculate Profit Factor
+    gross_profit = df[df['pnl'] > 0]['pnl'].sum() if winning_trades > 0 else 0
+    gross_loss = abs(df[df['pnl'] < 0]['pnl'].sum()) if losing_trades > 0 else 0
+    profit_factor = (gross_profit / gross_loss) if gross_loss > 0 else 0
+    
+    # Calculate Sharpe Ratio (assuming daily returns)
+    if len(df) > 1:
+        returns = df['pnl']
+        sharpe_ratio = (returns.mean() / returns.std()) * (252 ** 0.5) if returns.std() > 0 else 0
+    else:
+        sharpe_ratio = 0
+    
+    # Calculate Max Drawdown
+    df_sorted = df.sort_values('date')
+    cumulative = df_sorted['pnl'].cumsum()
+    running_max = cumulative.cummax()
+    drawdown = cumulative - running_max
+    max_drawdown = abs(drawdown.min()) if len(drawdown) > 0 else 0
+    
+    # Max Drawdown Percentage
+    peak = running_max.max()
+    max_drawdown_pct = (max_drawdown / peak * 100) if peak > 0 else 0
+    
     return {
         'total_profit': total_profit,
         'win_rate': win_rate,
@@ -298,7 +380,11 @@ def calculate_metrics(df):
         'winning_trades': winning_trades,
         'losing_trades': losing_trades,
         'avg_win': avg_win,
-        'avg_loss': avg_loss
+        'avg_loss': avg_loss,
+        'profit_factor': profit_factor,
+        'sharpe_ratio': sharpe_ratio,
+        'max_drawdown': max_drawdown,
+        'max_drawdown_pct': max_drawdown_pct
     }
 
 def get_daily_stats(df):
@@ -743,7 +829,7 @@ with st.sidebar:
     st.header("📊 Filters")
 
 # Create tabs
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["📝 Add Trade", "📊 All Trades", "📅 Calendar", "💰 Per Symbol", "🧠 Psychology"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["📝 Add Trade", "📊 All Trades", "📅 Calendar", "💰 Per Symbol", "🧠 Psychology", "📔 Daily Journal"])
 
 # TAB 1: Add New Trade
 with tab1:
@@ -1074,6 +1160,9 @@ if trades:
         # Display metrics
         metrics = calculate_metrics(filtered_df)
         
+        st.subheader("📊 Performance Metrics")
+        
+        # Row 1: Basic metrics
         col1, col2, col3, col4, col5, col6 = st.columns(6)
         with col1:
             color = "normal" if metrics['total_profit'] >= 0 else "inverse"
@@ -1081,19 +1170,31 @@ if trades:
         with col2:
             st.metric("📊 Win Rate", f"{metrics['win_rate']:.1f}%")
         with col3:
-            st.metric("🎯 Expectancy", f"${metrics['Expectancy']:.2f}")
+            st.metric("🎯 Expectancy", f"{currency}{metrics['Expectancy']:.2f}")
         with col4:
-            st.metric("📈 Total trades", metrics['total_trades'])
+            st.metric("📈 Total Trades", metrics['total_trades'])
         with col5:
             st.metric("✅ Wins", metrics['winning_trades'])
         with col6:
             st.metric("❌ Losses", metrics['losing_trades'])
         
-        col1, col2 = st.columns(2)
+        # Row 2: Average metrics
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("💚 Avg Win", f"{currency}{metrics['avg_win']:.2f}")
         with col2:
             st.metric("❤️ Avg Loss", f"{currency}{metrics['avg_loss']:.2f}")
+        with col3:
+            st.metric("📈 Profit Factor", f"{metrics['profit_factor']:.2f}")
+        with col4:
+            st.metric("⚡ Sharpe Ratio", f"{metrics['sharpe_ratio']:.2f}")
+        
+        # Row 3: Risk metrics
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("📉 Max Drawdown", f"{currency}{metrics['max_drawdown']:.2f}")
+        with col2:
+            st.metric("📉 Max DD %", f"{metrics['max_drawdown_pct']:.1f}%")
         
         st.divider()
         
@@ -1136,6 +1237,116 @@ if trades:
                 plt.xticks(rotation=45)
                 plt.tight_layout()
                 st.pyplot(fig)
+            else:
+                st.info("No data to display")
+        
+        st.divider()
+        
+        # New charts row: Drawdown and Monthly Performance
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("📉 Drawdown Chart")
+            if len(filtered_df) > 0:
+                fig, ax = plt.subplots(figsize=(10, 5))
+                df_chart = filtered_df.sort_values('date').copy()
+                df_chart['cumulative_pnl'] = df_chart['pnl'].cumsum()
+                df_chart['running_max'] = df_chart['cumulative_pnl'].cummax()
+                df_chart['drawdown'] = df_chart['cumulative_pnl'] - df_chart['running_max']
+                
+                ax.fill_between(df_chart['date'], df_chart['drawdown'], 0, 
+                               color='#ff4444', alpha=0.3, label='Drawdown')
+                ax.plot(df_chart['date'], df_chart['drawdown'], 
+                       color='#ff4444', linewidth=2)
+                ax.axhline(y=0, color='white', linestyle='--', alpha=0.5, linewidth=1)
+                ax.set_xlabel('Date', fontsize=12)
+                ax.set_ylabel('Drawdown ($)', fontsize=12)
+                ax.set_title('Underwater Equity Curve', fontsize=14, fontweight='bold')
+                ax.grid(True, alpha=0.3, linestyle='--')
+                plt.xticks(rotation=45)
+                plt.tight_layout()
+                st.pyplot(fig)
+            else:
+                st.info("No data to display")
+        
+        with col2:
+            st.subheader("📊 Monthly Performance")
+            if len(filtered_df) > 0:
+                df_monthly = filtered_df.copy()
+                df_monthly['year_month'] = df_monthly['date'].dt.to_period('M').astype(str)
+                monthly_pnl = df_monthly.groupby('year_month')['pnl'].sum().sort_index()
+                
+                fig, ax = plt.subplots(figsize=(10, 5))
+                colors = ['#00ff88' if x > 0 else '#ff4444' for x in monthly_pnl.values]
+                monthly_pnl.plot(kind='bar', ax=ax, color=colors, edgecolor='white', linewidth=1.5)
+                ax.axhline(y=0, color='white', linewidth=1)
+                ax.set_xlabel('Month', fontsize=12)
+                ax.set_ylabel('P&L ($)', fontsize=12)
+                ax.set_title('Monthly Performance', fontsize=14, fontweight='bold')
+                ax.grid(True, alpha=0.3, axis='y', linestyle='--')
+                plt.xticks(rotation=45)
+                plt.tight_layout()
+                st.pyplot(fig)
+            else:
+                st.info("No data to display")
+        
+        st.divider()
+        
+        # Day of Week Analysis
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("📅 Best Day of Week")
+            if len(filtered_df) > 0:
+                df_dow = filtered_df.copy()
+                df_dow['day_of_week'] = df_dow['date'].dt.day_name()
+                
+                # Order days correctly
+                day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                dow_stats = df_dow.groupby('day_of_week').agg({
+                    'pnl': ['sum', 'mean', 'count']
+                }).round(2)
+                dow_stats.columns = ['Total P&L', 'Avg P&L', 'Trades']
+                
+                # Reindex to correct order
+                dow_stats = dow_stats.reindex([d for d in day_order if d in dow_stats.index])
+                
+                fig, ax = plt.subplots(figsize=(10, 5))
+                colors = ['#00ff88' if x > 0 else '#ff4444' for x in dow_stats['Total P&L']]
+                dow_stats['Total P&L'].plot(kind='bar', ax=ax, color=colors, 
+                                           edgecolor='white', linewidth=1.5)
+                ax.axhline(y=0, color='white', linewidth=1)
+                ax.set_xlabel('Day of Week', fontsize=12)
+                ax.set_ylabel('Total P&L ($)', fontsize=12)
+                ax.set_title('Performance by Day of Week', fontsize=14, fontweight='bold')
+                ax.grid(True, alpha=0.3, axis='y', linestyle='--')
+                plt.xticks(rotation=45)
+                plt.tight_layout()
+                st.pyplot(fig)
+                
+                # Show best day
+                best_day = dow_stats['Total P&L'].idxmax()
+                best_day_pnl = dow_stats.loc[best_day, 'Total P&L']
+                st.success(f"🏆 Best Day: **{best_day}** ({currency}{best_day_pnl:.2f})")
+            else:
+                st.info("No data to display")
+        
+        with col2:
+            st.subheader("📊 Day of Week Stats")
+            if len(filtered_df) > 0:
+                st.dataframe(dow_stats, use_container_width=True)
+                
+                st.caption("💡 **Insights:**")
+                # Find worst day
+                worst_day = dow_stats['Total P&L'].idxmin()
+                worst_day_pnl = dow_stats.loc[worst_day, 'Total P&L']
+                
+                st.info(f"📉 Worst Day: **{worst_day}** ({currency}{worst_day_pnl:.2f})")
+                
+                # Most active day
+                most_active = dow_stats['Trades'].idxmax()
+                most_active_count = dow_stats.loc[most_active, 'Trades']
+                st.info(f"📈 Most Active: **{most_active}** ({int(most_active_count)} trades)")
             else:
                 st.info("No data to display")
         
@@ -1760,6 +1971,84 @@ if trades:
             
         else:
             st.warning("⚠️ No psychological data available. Add trades with the new fields!")
+    
+    # TAB 6: Daily Journal
+    with tab6:
+        st.header("📔 Daily Journal")
+        st.info("💡 Write daily notes about your trading mindset, market observations, and lessons learned")
+        
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.subheader("✍️ Add Daily Note")
+            
+            with st.form("daily_note_form"):
+                note_date = st.date_input("Date", value=datetime.today(), key="note_date")
+                note_mood = st.selectbox("Overall Mood", ["Calm", "Anxious", "Confident", "Excited", "Frustrated", "Neutral"], key="note_mood")
+                note_energy = st.slider("Energy Level", 1, 5, 3, key="note_energy")
+                note_text = st.text_area("Daily Notes", placeholder="What did you observe today? How did you feel? What did you learn?", height=200, key="note_text")
+                
+                submit_note = st.form_submit_button("💾 Save Daily Note", use_container_width=True)
+                
+                if submit_note:
+                    if note_text:
+                        success = add_daily_note(
+                            current_user['id'],
+                            note_date.strftime('%Y-%m-%d'),
+                            note_text,
+                            note_mood,
+                            note_energy
+                        )
+                        if success:
+                            st.success("✅ Daily note saved!")
+                            st.rerun()
+                    else:
+                        st.error("⚠️ Please write something in your note")
+        
+        with col2:
+            st.subheader("📊 Journal Stats")
+            user_notes = load_daily_notes(current_user['id'])
+            
+            if len(user_notes) > 0:
+                st.metric("Total Entries", len(user_notes))
+                
+                # Count by mood
+                moods = [n['mood'] for n in user_notes]
+                mood_counts = pd.Series(moods).value_counts()
+                st.caption("**Mood Distribution:**")
+                for mood, count in mood_counts.items():
+                    st.text(f"{mood}: {count}")
+            else:
+                st.info("No entries yet")
+        
+        st.divider()
+        
+        st.subheader("📖 Your Daily Notes")
+        
+        # Load and display notes
+        user_notes = load_daily_notes(current_user['id'])
+        
+        if len(user_notes) > 0:
+            # Sort by date (newest first)
+            notes_df = pd.DataFrame(user_notes)
+            notes_df['date'] = pd.to_datetime(notes_df['date'])
+            notes_df = notes_df.sort_values('date', ascending=False)
+            
+            # Display notes
+            for idx, note in notes_df.iterrows():
+                with st.expander(f"📅 {note['date'].strftime('%Y-%m-%d')} - {note['mood']} (Energy: {note['energy_level']}/5)", expanded=False):
+                    st.markdown(f"**Note:**")
+                    st.write(note['note'])
+                    st.caption(f"Created: {note.get('created_at', 'N/A')}")
+                    
+                    col1, col2 = st.columns([4, 1])
+                    with col2:
+                        if st.button("🗑️ Delete", key=f"del_note_{note['date'].strftime('%Y%m%d')}"):
+                            delete_daily_note(current_user['id'], note['date'].strftime('%Y-%m-%d'))
+                            st.success("Note deleted!")
+                            st.rerun()
+        else:
+            st.info("📝 No daily notes yet. Start journaling to track your trading journey!")
 
 else:
     st.info("🎯 No trades yet. Add your first trade in the 'Add Trade' tab!")
