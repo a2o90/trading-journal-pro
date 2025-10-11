@@ -15,7 +15,7 @@ NOTES_FILE = "daily_notes.json"
 ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
 
 # App Version
-APP_VERSION = "2.3.1"
+APP_VERSION = "2.3.2"
 LAST_UPDATE = "2025-10-11"
 
 # ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
@@ -744,12 +744,33 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("📈 Trading Journal Pro")
-st.markdown(f"""
-<div class="version-badge">
-    <strong>Version {APP_VERSION}</strong> | Last Updated: {LAST_UPDATE}
-</div>
-""", unsafe_allow_html=True)
+col1, col2 = st.columns([3, 1])
+
+with col1:
+    st.title("📈 Trading Journal Pro")
+    st.markdown(f"""
+    <div class="version-badge">
+        <strong>Version {APP_VERSION}</strong> | Last Updated: {LAST_UPDATE}
+    </div>
+    """, unsafe_allow_html=True)
+
+with col2:
+    st.write("")
+    st.write("")
+    theme_col1, theme_col2 = st.columns(2)
+    
+    with theme_col1:
+        if st.button("🌙 Dark", use_container_width=True, type="primary" if dark_mode else "secondary", key="header_dark"):
+            settings['dark_mode'] = True
+            save_settings(settings)
+            st.rerun()
+    
+    with theme_col2:
+        if st.button("☀️ Light", use_container_width=True, type="primary" if not dark_mode else "secondary", key="header_light"):
+            settings['dark_mode'] = False
+            save_settings(settings)
+            st.rerun()
+
 st.write("")
 
 # Force reload data on each run (prevents deleted trades from coming back)
