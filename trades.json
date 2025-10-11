@@ -1,0 +1,26 @@
+[
+  {
+    "id": 0,
+    "account_id": 0,
+    "account_name": "Main Account",
+    "date": "2025-10-11",
+    "symbol": "MNQ",
+    "side": "Long",
+    "entry_price": 1.0,
+    "exit_price": 10.0,
+    "quantity": 1.0,
+    "duration_minutes": 3,
+    "pnl": 9.0,
+    "r_multiple": 0.09,
+    "setup": "ss",
+    "influence": "FVG",
+    "trade_type": "Daytrade",
+    "market_condition": "Volatile",
+    "mood": "Calm",
+    "focus_level": 5,
+    "stress_level": 3,
+    "sleep_quality": 3,
+    "pre_trade_confidence": 3,
+    "notes": "niks"
+  }
+]
