@@ -15,7 +15,7 @@ NOTES_FILE = "daily_notes.json"
 ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
 
 # App Version
-APP_VERSION = "2.1.1"
+APP_VERSION = "2.2.0"
 LAST_UPDATE = "2025-10-11"
 
 # ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
@@ -113,8 +113,8 @@ def login_page():
     
     st.markdown("---")
     
-    # Create tabs for login and register
-    tab1, tab2 = st.tabs(["🔑 Login", "📝 Register"])
+    # Create tabs for login, register, and mentor access
+    tab1, tab2, tab3 = st.tabs(["🔑 Login", "📝 Register", "👨‍🏫 Mentor Access"])
     
     with tab1:
         st.subheader("Login to Your Journal")
@@ -161,6 +161,65 @@ def login_page():
                             st.error(f"❌ {result}")
                 else:
                     st.error("❌ Please fill in all fields")
+    
+    with tab3:
+        st.subheader("🎓 Mentor/Coach Access")
+        st.info("💡 Enter a student's share code to view their journal (read-only)")
+        
+        with st.form("mentor_access_form"):
+            share_code = st.text_input("Enter Share Code", placeholder="e.g. TJ-1-A2O9")
+            mentor_name = st.text_input("Your Name (Optional)", placeholder="e.g. Coach John")
+            access_submit = st.form_submit_button("📊 Access Journal", use_container_width=True)
+            
+            if access_submit:
+                if share_code:
+                    # Decode share code: TJ-{user_id}-{username_prefix}
+                    try:
+                        parts = share_code.strip().upper().split('-')
+                        if len(parts) == 3 and parts[0] == 'TJ':
+                            student_id = int(parts[1])
+                            
+                            # Find user by ID
+                            all_users = load_users()
+                            student_user = None
+                            for u in all_users:
+                                if u['id'] == student_id:
+                                    student_user = u
+                                    break
+                            
+                            if student_user:
+                                # Create mentor session
+                                st.session_state['user'] = student_user
+                                st.session_state['logged_in'] = True
+                                st.session_state['mentor_mode'] = True
+                                st.session_state['mentor_name'] = mentor_name if mentor_name else "Mentor"
+                                st.success(f"✅ Access granted! Viewing {student_user['display_name']}'s journal")
+                                st.rerun()
+                            else:
+                                st.error("❌ Invalid share code - Student not found")
+                        else:
+                            st.error("❌ Invalid share code format. Use format: TJ-X-XXXX")
+                    except:
+                        st.error("❌ Invalid share code format")
+                else:
+                    st.error("❌ Please enter a share code")
+        
+        st.divider()
+        
+        with st.expander("ℹ️ How does Mentor Access work?", expanded=False):
+            st.markdown("""
+            **For Mentors/Coaches:**
+            1. Ask your student for their **Share Code**
+            2. Enter the code above
+            3. You'll get **read-only** access to their journal
+            4. You can view all trades, stats, and analytics
+            5. You **cannot** edit or delete their data
+            
+            **For Students:**
+            - Enable sharing in **👨‍🏫 Mentor Mode** tab
+            - Share your code with your mentor/coach
+            - Your data stays safe - mentors can only view, not edit
+            """)
 
 # ===== CHECK LOGIN STATUS =====
 
@@ -617,14 +676,34 @@ accounts = load_accounts(current_user['id'])
 settings = load_settings()
 currency = settings.get('currency', '$')
 
+# Check if in mentor mode
+is_mentor_mode = st.session_state.get('mentor_mode', False)
+mentor_name = st.session_state.get('mentor_name', 'Mentor')
+
 # Sidebar for settings
 with st.sidebar:
-    # User info and logout
-    st.success(f"👤 Logged in as: **{current_user['display_name']}**")
-    if st.button("🚪 Logout", use_container_width=True):
-        st.session_state['logged_in'] = False
-        del st.session_state['user']
-        st.rerun()
+    # Mentor mode indicator
+    if is_mentor_mode:
+        st.warning(f"👨‍🏫 **Mentor View** ({mentor_name})")
+        st.info(f"📊 Viewing: **{current_user['display_name']}**'s Journal")
+        
+        if st.button("🚪 Exit Mentor Mode", use_container_width=True):
+            st.session_state['logged_in'] = False
+            del st.session_state['user']
+            if 'mentor_mode' in st.session_state:
+                del st.session_state['mentor_mode']
+            if 'mentor_name' in st.session_state:
+                del st.session_state['mentor_name']
+            st.rerun()
+        
+        st.caption("🔒 **Read-Only Mode** - You cannot edit or delete data")
+    else:
+        # User info and logout
+        st.success(f"👤 Logged in as: **{current_user['display_name']}**")
+        if st.button("🚪 Logout", use_container_width=True):
+            st.session_state['logged_in'] = False
+            del st.session_state['user']
+            st.rerun()
     
     st.divider()
     
@@ -1006,92 +1085,104 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(["📝 Add Trade", "�
 # TAB 1: Add New Trade
 with tab1:
     st.header("Add New Trade")
-    with st.form("trade_form"):
-        st.subheader("📊 Trade Details")
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            trade_date = st.date_input("Date", value=datetime.today())
-            symbol = st.text_input("Symbol/Pair", placeholder="e.g. MNQ, AAPL")
-            side = st.selectbox("Side", ["Long", "Short"])
-            trade_type = st.selectbox("Trade Type", ["Daytrade", "Swing", "Scalping", "Position"])
-        
-        with col2:
-            entry_price = st.number_input("Entry Price", min_value=0.0, step=0.01, format="%.2f")
-            exit_price = st.number_input("Exit Price", min_value=0.0, step=0.01, format="%.2f")
-            quantity = st.number_input("Quantity", min_value=0.01, step=0.01, value=1.0, format="%.2f")
-            duration_minutes = st.number_input("Trade Duration (minutes)", min_value=0, step=1, value=0, help="How long were you in this trade?")
-            market_condition = st.selectbox("Market Condition", ["Trending", "Range", "Volatile", "News-driven"])
-        
-        with col3:
-            setup = st.text_input("Setup", placeholder="e.g. Breakout, Bounce")
-            influence = st.text_input("Influence/Reason", placeholder="Why did you take this trade?", 
-                                     help="e.g. FOMO, Signal, Analysis, News")
-            notes = st.text_area("Notes/Lessons", placeholder="What did you learn from this trade?", height=80)
-        
-        st.divider()
-        st.subheader("🧠 Psychology & Performance")
-        
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            mood = st.selectbox("Mood", ["Calm", "Anxious", "Confident", "Excited", "Frustrated"])
-            pre_trade_confidence = st.slider("Pre-Trade Confidence", 1, 5, 3)
-        
-        with col2:
-            focus_level = st.slider("Focus Level", 1, 5, 3)
-            stress_level = st.slider("Stress Level", 1, 5, 3)
-        
-        with col3:
-            sleep_quality = st.slider("Sleep Quality", 1, 5, 3)
-        
-        with col4:
-            st.caption("1 = Very low")
-            st.caption("5 = Very high")
-        
-        submitted = st.form_submit_button("✅ Add Trade", use_container_width=True)
-        
-        if submitted:
-            if symbol and entry_price > 0 and exit_price > 0:
-                pnl = calculate_pnl(entry_price, exit_price, quantity, side)
-                r_multiple = calculate_r_multiple(pnl, account_size)
-                
-                # Get next ID (across all trades, not just user's)
-                all_trades = load_trades()
-                next_id = max([t.get('id', 0) for t in all_trades], default=-1) + 1
-                
-                trade = {
-                    'id': next_id,
-                    'user_id': current_user['id'],
-                    'account_id': selected_account['id'],
-                    'account_name': selected_account['name'],
-                    'date': trade_date.strftime('%Y-%m-%d'),
-                    'symbol': symbol.upper(),
-                    'side': side,
-                    'entry_price': entry_price,
-                    'exit_price': exit_price,
-                    'quantity': quantity,
-                    'duration_minutes': duration_minutes,
-                    'pnl': round(pnl, 2),
-                    'r_multiple': round(r_multiple, 2),
-                    'setup': setup,
-                    'influence': influence,
-                    'trade_type': trade_type,
-                    'market_condition': market_condition,
-                    'mood': mood,
-                    'focus_level': focus_level,
-                    'stress_level': stress_level,
-                    'sleep_quality': sleep_quality,
-                    'pre_trade_confidence': pre_trade_confidence,
-                    'notes': notes
-                }
-                
-                trades.append(trade)
-                save_trades(trades)
-                st.success(f"✅ Trade added to {selected_account['name']}! PnL: {currency}{pnl:.2f}")
-                st.rerun()
-            else:
-                st.error("⚠️ Fill in all required fields (Symbol, Entry Price, Exit Price)")
+    
+    if is_mentor_mode:
+        st.warning("🔒 **Read-Only Mode**")
+        st.info("You are viewing this journal as a mentor. You cannot add new trades.")
+        st.markdown("### 📊 Student's Recent Activity")
+        if len(df) > 0:
+            recent_trades = df.head(5)
+            for idx, row in recent_trades.iterrows():
+                st.text(f"{row['date'].strftime('%Y-%m-%d')} - {row['symbol']} {row['side']} - {currency}{row['pnl']:.2f}")
+        else:
+            st.info("No trades yet")
+    else:
+        with st.form("trade_form"):
+            st.subheader("📊 Trade Details")
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                trade_date = st.date_input("Date", value=datetime.today())
+                symbol = st.text_input("Symbol/Pair", placeholder="e.g. MNQ, AAPL")
+                side = st.selectbox("Side", ["Long", "Short"])
+                trade_type = st.selectbox("Trade Type", ["Daytrade", "Swing", "Scalping", "Position"])
+            
+            with col2:
+                entry_price = st.number_input("Entry Price", min_value=0.0, step=0.01, format="%.2f")
+                exit_price = st.number_input("Exit Price", min_value=0.0, step=0.01, format="%.2f")
+                quantity = st.number_input("Quantity", min_value=0.01, step=0.01, value=1.0, format="%.2f")
+                duration_minutes = st.number_input("Trade Duration (minutes)", min_value=0, step=1, value=0, help="How long were you in this trade?")
+                market_condition = st.selectbox("Market Condition", ["Trending", "Range", "Volatile", "News-driven"])
+            
+            with col3:
+                setup = st.text_input("Setup", placeholder="e.g. Breakout, Bounce")
+                influence = st.text_input("Influence/Reason", placeholder="Why did you take this trade?", 
+                                         help="e.g. FOMO, Signal, Analysis, News")
+                notes = st.text_area("Notes/Lessons", placeholder="What did you learn from this trade?", height=80)
+            
+            st.divider()
+            st.subheader("🧠 Psychology & Performance")
+            
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                mood = st.selectbox("Mood", ["Calm", "Anxious", "Confident", "Excited", "Frustrated"])
+                pre_trade_confidence = st.slider("Pre-Trade Confidence", 1, 5, 3)
+            
+            with col2:
+                focus_level = st.slider("Focus Level", 1, 5, 3)
+                stress_level = st.slider("Stress Level", 1, 5, 3)
+            
+            with col3:
+                sleep_quality = st.slider("Sleep Quality", 1, 5, 3)
+            
+            with col4:
+                st.caption("1 = Very low")
+                st.caption("5 = Very high")
+            
+            submitted = st.form_submit_button("✅ Add Trade", use_container_width=True)
+            
+            if submitted:
+                if symbol and entry_price > 0 and exit_price > 0:
+                    pnl = calculate_pnl(entry_price, exit_price, quantity, side)
+                    r_multiple = calculate_r_multiple(pnl, account_size)
+                    
+                    # Get next ID (across all trades, not just user's)
+                    all_trades = load_trades()
+                    next_id = max([t.get('id', 0) for t in all_trades], default=-1) + 1
+                    
+                    trade = {
+                        'id': next_id,
+                        'user_id': current_user['id'],
+                        'account_id': selected_account['id'],
+                        'account_name': selected_account['name'],
+                        'date': trade_date.strftime('%Y-%m-%d'),
+                        'symbol': symbol.upper(),
+                        'side': side,
+                        'entry_price': entry_price,
+                        'exit_price': exit_price,
+                        'quantity': quantity,
+                        'duration_minutes': duration_minutes,
+                        'pnl': round(pnl, 2),
+                        'r_multiple': round(r_multiple, 2),
+                        'setup': setup,
+                        'influence': influence,
+                        'trade_type': trade_type,
+                        'market_condition': market_condition,
+                        'mood': mood,
+                        'focus_level': focus_level,
+                        'stress_level': stress_level,
+                        'sleep_quality': sleep_quality,
+                        'pre_trade_confidence': pre_trade_confidence,
+                        'notes': notes
+                    }
+                    
+                    trades.append(trade)
+                    save_trades(trades)
+                    st.success(f"✅ Trade added to {selected_account['name']}! PnL: {currency}{pnl:.2f}")
+                    st.rerun()
+                else:
+                    st.error("⚠️ Fill in all required fields (Symbol, Entry Price, Exit Price)")
 
 # Display trades if any exist
 if trades:
