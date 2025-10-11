@@ -15,7 +15,7 @@ NOTES_FILE = "daily_notes.json"
 ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
 
 # App Version
-APP_VERSION = "2.3.0"
+APP_VERSION = "2.3.1"
 LAST_UPDATE = "2025-10-11"
 
 # ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
@@ -748,6 +748,25 @@ currency = settings.get('currency', '$')
 # Check if in mentor mode
 is_mentor_mode = st.session_state.get('mentor_mode', False)
 mentor_name = st.session_state.get('mentor_name', 'Mentor')
+
+# Mentor mode banner (always visible, even if sidebar collapsed)
+if is_mentor_mode:
+    col1, col2 = st.columns([4, 1])
+    
+    with col1:
+        st.warning(f"👨‍🏫 **Mentor Mode Active** | Viewing: **{current_user['display_name']}**'s Journal ({mentor_name}) | 🔒 Read-Only")
+    
+    with col2:
+        if st.button("🚪 Exit Mentor Mode", type="primary", use_container_width=True):
+            st.session_state['logged_in'] = False
+            del st.session_state['user']
+            if 'mentor_mode' in st.session_state:
+                del st.session_state['mentor_mode']
+            if 'mentor_name' in st.session_state:
+                del st.session_state['mentor_name']
+            st.rerun()
+    
+    st.divider()
 
 # Sidebar for settings
 with st.sidebar:
