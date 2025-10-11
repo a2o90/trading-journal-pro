@@ -15,7 +15,7 @@ NOTES_FILE = "daily_notes.json"
 ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
 
 # App Version
-APP_VERSION = "2.3.2"
+APP_VERSION = "2.3.3"
 LAST_UPDATE = "2025-10-11"
 
 # ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
@@ -744,9 +744,9 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-col1, col2 = st.columns([3, 1])
+header_col1, header_col2, header_col3 = st.columns([2, 1, 1])
 
-with col1:
+with header_col1:
     st.title("📈 Trading Journal Pro")
     st.markdown(f"""
     <div class="version-badge">
@@ -754,7 +754,7 @@ with col1:
     </div>
     """, unsafe_allow_html=True)
 
-with col2:
+with header_col2:
     st.write("")
     st.write("")
     theme_col1, theme_col2 = st.columns(2)
@@ -770,6 +770,26 @@ with col2:
             settings['dark_mode'] = False
             save_settings(settings)
             st.rerun()
+
+with header_col3:
+    st.write("")
+    st.write("")
+    st.markdown("""
+    <style>
+        .sidebar-hint {
+            background-color: rgba(255, 136, 0, 0.2);
+            border: 2px solid #ff8800;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+    </style>
+    <div class="sidebar-hint">
+        👈 Click the arrow on the left edge<br>to open/close sidebar
+    </div>
+    """, unsafe_allow_html=True)
 
 st.write("")
 
