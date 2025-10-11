@@ -1159,10 +1159,11 @@ with tab1:
         st.warning("🔒 **Read-Only Mode**")
         st.info("You are viewing this journal as a mentor. You cannot add new trades.")
         st.markdown("### 📊 Student's Recent Activity")
-        if len(df) > 0:
-            recent_trades = df.head(5)
-            for idx, row in recent_trades.iterrows():
-                st.text(f"{row['date'].strftime('%Y-%m-%d')} - {row['symbol']} {row['side']} - {currency}{row['pnl']:.2f}")
+        if len(trades) > 0:
+            # Get recent 5 trades
+            recent_trades_data = sorted(trades, key=lambda x: x.get('date', ''), reverse=True)[:5]
+            for trade in recent_trades_data:
+                st.text(f"{trade['date']} - {trade['symbol']} {trade['side']} - {currency}{trade['pnl']:.2f}")
         else:
             st.info("No trades yet")
     else:
