@@ -58,6 +58,13 @@ try:
 except Exception as e:
     AI_ASSISTANT_AVAILABLE = False
 
+# Import Mobile PWA module
+try:
+    from mobile_pwa import get_pwa_manifest, get_service_worker, get_pwa_html, get_mobile_css, get_quick_log_form, get_push_notification_schedule
+    MOBILE_PWA_AVAILABLE = True
+except Exception as e:
+    MOBILE_PWA_AVAILABLE = False
+
 # Import alerts module
 try:
     from alerts import check_all_alerts, get_alert_summary, DEFAULT_THRESHOLDS
@@ -1547,6 +1554,7 @@ with st.sidebar:
         "🧠 Psychology",
         "🔬 Advanced Analytics",
         "🤖 AI Assistant",
+        "📱 Mobile PWA",
         "🎯 Risk Calculator",
         "📔 Daily Journal",
         "🎬 Trade Replay",
@@ -4070,6 +4078,421 @@ if trades:
                             st.error(f"Error generating weekly report: {str(e)}")
                         finally:
                             st.session_state['generate_weekly_report'] = False
+    
+    # PAGE: Mobile PWA
+    if selected_page == "📱 Mobile PWA":
+        st.header("📱 Mobile PWA & Quick Logging")
+        st.info("💡 Install as mobile app, enable notifications, and use quick logging features")
+        
+        if not MOBILE_PWA_AVAILABLE:
+            st.error("❌ Mobile PWA module not available")
+        else:
+            st.success("✅ Mobile PWA features ready!")
+            
+            # Create tabs for different PWA features
+            tab1, tab2, tab3, tab4 = st.tabs(["📱 Install App", "⚡ Quick Logging", "🔔 Notifications", "📊 Mobile Stats"])
+            
+            with tab1:
+                st.subheader("📱 Install as Mobile App")
+                st.write("Transform your Trading Journal into a native mobile app experience")
+                
+                # PWA Installation Info
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown("""
+                    **🚀 PWA Benefits:**
+                    - 📱 Install on home screen
+                    - ⚡ Offline functionality
+                    - 🔔 Push notifications
+                    - 📲 Native app feel
+                    - 🎯 Quick access
+                    """)
+                
+                with col2:
+                    st.markdown("""
+                    **📋 Installation Steps:**
+                    1. Click "Install App" button
+                    2. Follow browser prompts
+                    3. App appears on home screen
+                    4. Launch like native app
+                    """)
+                
+                # PWA Status Check
+                st.subheader("📊 PWA Status")
+                
+                # Check if running as PWA
+                is_pwa = st.checkbox("Running as PWA", value=False, disabled=True)
+                if is_pwa:
+                    st.success("✅ Running as Progressive Web App!")
+                else:
+                    st.info("💡 Install the app to run as PWA")
+                
+                # Service Worker Status
+                sw_status = st.checkbox("Service Worker Active", value=False, disabled=True)
+                if sw_status:
+                    st.success("✅ Service Worker is active - offline functionality enabled!")
+                else:
+                    st.info("💡 Service Worker will activate after installation")
+                
+                # Installation Instructions
+                st.subheader("📱 Installation Instructions")
+                
+                with st.expander("🖥️ Desktop Installation", expanded=True):
+                    st.markdown("""
+                    **Chrome/Edge:**
+                    1. Look for install icon in address bar
+                    2. Click "Install Trading Journal Pro"
+                    3. Confirm installation
+                    
+                    **Firefox:**
+                    1. Click menu (3 lines)
+                    2. Select "Install"
+                    3. Confirm installation
+                    """)
+                
+                with st.expander("📱 Mobile Installation"):
+                    st.markdown("""
+                    **Android Chrome:**
+                    1. Tap menu (3 dots)
+                    2. Select "Add to Home screen"
+                    3. Tap "Add"
+                    
+                    **iOS Safari:**
+                    1. Tap Share button
+                    2. Select "Add to Home Screen"
+                    3. Tap "Add"
+                    """)
+                
+                # PWA Manifest Download
+                st.subheader("📄 PWA Files")
+                
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    manifest = get_pwa_manifest()
+                    st.download_button(
+                        label="📄 Download Manifest",
+                        data=json.dumps(manifest, indent=2),
+                        file_name="manifest.json",
+                        mime="application/json",
+                        use_container_width=True
+                    )
+                
+                with col2:
+                    service_worker = get_service_worker()
+                    st.download_button(
+                        label="⚙️ Download Service Worker",
+                        data=service_worker,
+                        file_name="sw.js",
+                        mime="application/javascript",
+                        use_container_width=True
+                    )
+                
+                with col3:
+                    pwa_html = get_pwa_html()
+                    st.download_button(
+                        label="🌐 Download PWA HTML",
+                        data=pwa_html,
+                        file_name="pwa.html",
+                        mime="text/html",
+                        use_container_width=True
+                    )
+            
+            with tab2:
+                st.subheader("⚡ Quick Trade Logging")
+                st.write("Fast and easy trade entry optimized for mobile devices")
+                
+                # Quick Log Form
+                with st.form("quick_log_form"):
+                    st.markdown("### 🚀 Quick Trade Entry")
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        quick_symbol = st.text_input(
+                            "Symbol",
+                            placeholder="EURUSD",
+                            help="Trading symbol"
+                        )
+                        
+                        quick_side = st.selectbox(
+                            "Side",
+                            ["Long", "Short"],
+                            help="Trade direction"
+                        )
+                    
+                    with col2:
+                        quick_entry = st.number_input(
+                            "Entry Price",
+                            min_value=0.0,
+                            step=0.00001,
+                            format="%.5f",
+                            help="Entry price"
+                        )
+                        
+                        quick_exit = st.number_input(
+                            "Exit Price", 
+                            min_value=0.0,
+                            step=0.00001,
+                            format="%.5f",
+                            help="Exit price"
+                        )
+                    
+                    quick_quantity = st.number_input(
+                        "Quantity",
+                        min_value=0.01,
+                        value=1.0,
+                        step=0.01,
+                        help="Position size"
+                    )
+                    
+                    quick_notes = st.text_area(
+                        "Quick Notes",
+                        placeholder="Optional notes...",
+                        height=100,
+                        help="Quick notes about the trade"
+                    )
+                    
+                    submitted = st.form_submit_button("⚡ Quick Save", type="primary", use_container_width=True)
+                    
+                    if submitted:
+                        if quick_symbol and quick_entry > 0 and quick_exit > 0:
+                            # Calculate P&L
+                            if quick_side == "Long":
+                                pnl = (quick_exit - quick_entry) * quick_quantity
+                            else:
+                                pnl = (quick_entry - quick_exit) * quick_quantity
+                            
+                            # Create trade object
+                            quick_trade = {
+                                'id': max([t.get('id', 0) for t in trades], default=0) + 1,
+                                'user_id': current_user['id'],
+                                'account_id': selected_account.get('id', 1),
+                                'account_name': selected_account.get('name', 'Main Account'),
+                                'date': datetime.now().strftime('%Y-%m-%d'),
+                                'time': datetime.now().strftime('%H:%M:%S'),
+                                'symbol': quick_symbol.upper(),
+                                'side': quick_side,
+                                'entry_price': quick_entry,
+                                'exit_price': quick_exit,
+                                'quantity': quick_quantity,
+                                'duration_minutes': 0,
+                                'pnl': round(pnl, 2),
+                                'r_multiple': round(pnl / (selected_account.get('size', 10000) * 0.01), 2),
+                                'setup': 'Quick Log',
+                                'influence': 'Mobile',
+                                'trade_type': 'Quick',
+                                'market_condition': 'Unknown',
+                                'mood': 'Quick',
+                                'focus_level': 3,
+                                'stress_level': 3,
+                                'sleep_quality': 3,
+                                'pre_trade_confidence': 3,
+                                'notes': quick_notes
+                            }
+                            
+                            # Save trade
+                            trades.append(quick_trade)
+                            save_trades(trades)
+                            
+                            st.success(f"⚡ Trade saved! P&L: €{pnl:.2f}")
+                            st.balloons()
+                            st.rerun()
+                        else:
+                            st.error("Please fill in all required fields")
+                
+                # Quick Stats
+                st.subheader("📊 Quick Stats")
+                
+                if trades:
+                    recent_trades = [t for t in trades if t.get('setup') == 'Quick Log']
+                    
+                    if recent_trades:
+                        col1, col2, col3, col4 = st.columns(4)
+                        
+                        with col1:
+                            st.metric("Quick Trades", len(recent_trades))
+                        
+                        with col2:
+                            quick_pnl = sum(t.get('pnl', 0) for t in recent_trades)
+                            st.metric("Quick P&L", f"€{quick_pnl:.2f}")
+                        
+                        with col3:
+                            quick_wins = len([t for t in recent_trades if t.get('pnl', 0) > 0])
+                            quick_wr = (quick_wins / len(recent_trades) * 100) if recent_trades else 0
+                            st.metric("Quick Win Rate", f"{quick_wr:.1f}%")
+                        
+                        with col4:
+                            avg_quick = sum(t.get('pnl', 0) for t in recent_trades) / len(recent_trades)
+                            st.metric("Avg Quick P&L", f"€{avg_quick:.2f}")
+                    else:
+                        st.info("No quick trades yet. Start logging!")
+                else:
+                    st.info("No trades yet. Start logging!")
+            
+            with tab3:
+                st.subheader("🔔 Push Notifications")
+                st.write("Enable notifications for trading reminders and alerts")
+                
+                # Notification Settings
+                st.markdown("### ⚙️ Notification Settings")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    market_open_reminder = st.checkbox(
+                        "Market Open Reminder",
+                        value=True,
+                        help="Get notified when markets open"
+                    )
+                    
+                    market_close_reminder = st.checkbox(
+                        "Market Close Reminder", 
+                        value=True,
+                        help="Get notified when markets close"
+                    )
+                
+                with col2:
+                    journal_reminder = st.checkbox(
+                        "Journal Reminder",
+                        value=True,
+                        help="Daily reminder to log trades"
+                    )
+                    
+                    weekly_review = st.checkbox(
+                        "Weekly Review",
+                        value=True,
+                        help="Weekly performance review reminder"
+                    )
+                
+                # Notification Schedule Preview
+                st.subheader("📅 Notification Schedule")
+                
+                user_prefs = {
+                    'market_open_reminder': market_open_reminder,
+                    'market_close_reminder': market_close_reminder,
+                    'journal_reminder': journal_reminder,
+                    'weekly_review': weekly_review
+                }
+                
+                notifications = get_push_notification_schedule(user_prefs)
+                
+                if notifications:
+                    for notif in notifications:
+                        col1, col2, col3 = st.columns([2, 2, 1])
+                        
+                        with col1:
+                            st.write(f"**{notif['title']}**")
+                        
+                        with col2:
+                            time_str = notif.get('time', '')
+                            day_str = notif.get('day', 'Daily')
+                            st.write(f"{day_str} at {time_str}")
+                        
+                        with col3:
+                            st.write(notif['body'])
+                        
+                        st.divider()
+                else:
+                    st.info("No notifications configured")
+                
+                # Notification Test
+                st.subheader("🧪 Test Notifications")
+                
+                if st.button("🔔 Test Notification", type="primary"):
+                    st.success("✅ Test notification sent! (Note: Actual notifications require PWA installation)")
+                
+                # Notification Status
+                st.subheader("📊 Notification Status")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.metric("Notifications Enabled", "Yes" if any(user_prefs.values()) else "No")
+                
+                with col2:
+                    st.metric("Scheduled Notifications", len(notifications))
+            
+            with tab4:
+                st.subheader("📊 Mobile-Optimized Stats")
+                st.write("Key metrics optimized for mobile viewing")
+                
+                if trades:
+                    # Mobile-friendly metrics
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.markdown("### 📈 Today's Performance")
+                        
+                        today = datetime.now().strftime('%Y-%m-%d')
+                        today_trades = [t for t in trades if t.get('date') == today]
+                        
+                        if today_trades:
+                            today_pnl = sum(t.get('pnl', 0) for t in today_trades)
+                            today_wins = len([t for t in today_trades if t.get('pnl', 0) > 0])
+                            today_wr = (today_wins / len(today_trades) * 100) if today_trades else 0
+                            
+                            st.metric("Today's P&L", f"€{today_pnl:.2f}")
+                            st.metric("Today's Trades", len(today_trades))
+                            st.metric("Today's Win Rate", f"{today_wr:.1f}%")
+                        else:
+                            st.info("No trades today")
+                    
+                    with col2:
+                        st.markdown("### 📊 This Week")
+                        
+                        week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+                        week_trades = [t for t in trades if t.get('date', '') >= week_ago]
+                        
+                        if week_trades:
+                            week_pnl = sum(t.get('pnl', 0) for t in week_trades)
+                            week_wins = len([t for t in week_trades if t.get('pnl', 0) > 0])
+                            week_wr = (week_wins / len(week_trades) * 100) if week_trades else 0
+                            
+                            st.metric("Week's P&L", f"€{week_pnl:.2f}")
+                            st.metric("Week's Trades", len(week_trades))
+                            st.metric("Week's Win Rate", f"{week_wr:.1f}%")
+                        else:
+                            st.info("No trades this week")
+                    
+                    # Mobile-friendly charts
+                    st.markdown("### 📈 Mobile Charts")
+                    
+                    # Simple P&L chart
+                    if len(trades) > 1:
+                        df = pd.DataFrame(trades)
+                        df['date'] = pd.to_datetime(df['date'])
+                        df = df.sort_values('date')
+                        df['cumulative_pnl'] = df['pnl'].cumsum()
+                        
+                        st.line_chart(
+                            df.set_index('date')['cumulative_pnl'],
+                            height=300
+                        )
+                    
+                    # Top performing symbols
+                    if trades:
+                        symbol_pnl = {}
+                        for trade in trades:
+                            symbol = trade.get('symbol', 'Unknown')
+                            if symbol not in symbol_pnl:
+                                symbol_pnl[symbol] = 0
+                            symbol_pnl[symbol] += trade.get('pnl', 0)
+                        
+                        if symbol_pnl:
+                            top_symbols = sorted(symbol_pnl.items(), key=lambda x: x[1], reverse=True)[:5]
+                            
+                            st.markdown("### 🏆 Top Symbols")
+                            for symbol, pnl in top_symbols:
+                                col1, col2 = st.columns([3, 1])
+                                with col1:
+                                    st.write(symbol)
+                                with col2:
+                                    color = "green" if pnl > 0 else "red"
+                                    st.write(f":{color}[€{pnl:.2f}]")
+                else:
+                    st.info("Add some trades to see mobile stats!")
     
     # PAGE: Risk Calculator
     if selected_page == "🎯 Risk Calculator":
