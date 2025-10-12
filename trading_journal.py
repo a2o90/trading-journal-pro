@@ -187,6 +187,50 @@ def login_page():
     
     st.markdown("---")
     
+    # Privacy Disclaimer
+    st.markdown("""
+    <style>
+        .privacy-disclaimer {
+            background: linear-gradient(135deg, rgba(255, 136, 0, 0.15) 0%, rgba(255, 68, 68, 0.15) 100%);
+            border: 2px solid rgba(255, 136, 0, 0.5);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .privacy-disclaimer h4 {
+            color: #ff8800;
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .privacy-disclaimer p {
+            margin: 10px 0;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        .privacy-disclaimer ul {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+        .privacy-disclaimer li {
+            margin: 5px 0;
+            line-height: 1.5;
+        }
+    </style>
+    <div class="privacy-disclaimer">
+        <h4>⚠️ Privacy & Data Disclaimer</h4>
+        <p><strong>Let op:</strong> Als je deze Trading Journal gebruikt, moet je weten dat:</p>
+        <ul>
+            <li>🔍 De <strong>admin</strong> toegang heeft tot alle gebruikersdata, inclusief jouw trades en statistieken</li>
+            <li>👨‍🏫 Je kunt via <strong>Mentor Mode</strong> je journal delen met coaches (read-only)</li>
+            <li>🔒 Je data wordt lokaal opgeslagen in JSON bestanden op de server</li>
+            <li>📊 Geen data wordt gedeeld met derden - alleen admin heeft inzage</li>
+        </ul>
+        <p style='margin-top: 15px; font-size: 13px; opacity: 0.9;'>
+            Door in te loggen of te registreren ga je akkoord met deze voorwaarden.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
     # Create tabs for login, register, and mentor access
     tab1, tab2, tab3 = st.tabs(["🔑 Login", "📝 Register", "👨‍🏫 Mentor Access"])
     
