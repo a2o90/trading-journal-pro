@@ -57,6 +57,17 @@ try:
 except Exception as e:
     GAMIFICATION_AVAILABLE = False
 
+# Import mentor system module
+try:
+    from mentor_system import (
+        add_trade_comment, get_comments_for_trade, get_all_comments_by_user,
+        create_feedback_session, update_feedback_session, get_feedback_for_user,
+        generate_suggestions_from_trades, get_mentor_statistics, get_latest_feedback
+    )
+    MENTOR_SYSTEM_AVAILABLE = True
+except Exception as e:
+    MENTOR_SYSTEM_AVAILABLE = False
+
 # Import data layer (handles Database or JSON fallback)
 try:
     from data_layer import (
@@ -118,8 +129,8 @@ def save_users(users):
     if DATA_LAYER_AVAILABLE:
         dl_save_users(users)
     else:
-        with open(USERS_FILE, 'w') as f:
-            json.dump(users, f, indent=2)
+    with open(USERS_FILE, 'w') as f:
+        json.dump(users, f, indent=2)
 
 def authenticate_user(username, password):
     """Authenticate user and return user object if valid"""
@@ -485,8 +496,8 @@ def save_settings(settings):
     if DATA_LAYER_AVAILABLE:
         dl_save_settings(settings)
     else:
-        with open(SETTINGS_FILE, 'w') as f:
-            json.dump(settings, f, indent=2)
+    with open(SETTINGS_FILE, 'w') as f:
+        json.dump(settings, f, indent=2)
 
 # ===== MISTAKES MANAGEMENT =====
 
@@ -717,8 +728,8 @@ def save_accounts(accounts):
     if DATA_LAYER_AVAILABLE:
         dl_save_accounts(accounts)
     else:
-        with open(ACCOUNTS_FILE, 'w') as f:
-            json.dump(accounts, f, indent=2)
+    with open(ACCOUNTS_FILE, 'w') as f:
+        json.dump(accounts, f, indent=2)
 
 def load_trades(user_id=None):
     """Load trades - Uses Database or JSON fallback"""
@@ -774,8 +785,8 @@ def save_trades(trades):
     if DATA_LAYER_AVAILABLE:
         dl_save_trades(trades)
     else:
-        with open(TRADES_FILE, 'w') as f:
-            json.dump(trades, f, indent=2)
+    with open(TRADES_FILE, 'w') as f:
+        json.dump(trades, f, indent=2)
 
 def delete_trade(trade_id):
     """Delete a specific trade by ID"""
@@ -4253,8 +4264,8 @@ if trades:
                 """)
                 
                 col1, col2 = st.columns(2)
-                
-                with col1:
+        
+        with col1:
                     # Week selector
                     today = datetime.now()
                     week_options = []
@@ -4302,7 +4313,7 @@ if trades:
             with tab2:
                 st.subheader("📆 Monthly Report")
                 st.write("Generate a detailed monthly trading report including:")
-                st.markdown("""
+                    st.markdown("""
                 - 📊 Monthly summary with key metrics
                 - 📈 Weekly P&L breakdown
                 - 📉 Equity curve with drawdown visualization
@@ -4560,7 +4571,7 @@ if trades:
                                             preview_df = pd.DataFrame(imported_trades)
                                             st.dataframe(preview_df, use_container_width=True)
                                     
-                                    else:
+            else:
                                         st.error("❌ No trades could be imported")
                                         if errors:
                                             st.write("**Errors:**")
@@ -4606,8 +4617,8 @@ if trades:
                             ]
                         else:
                             trades_to_export = trades
-                    
-                    with col2:
+        
+        with col2:
                         st.metric("Trades to Export", len(trades_to_export))
                         
                         if len(trades_to_export) > 0:
@@ -4621,12 +4632,12 @@ if trades:
                                 type="primary",
                                 use_container_width=True
                             )
-                        else:
+            else:
                             st.warning("No trades in selected date range")
-                    
+        
                     # Show preview
                     if len(trades_to_export) > 0:
-                        st.divider()
+        st.divider()
                         st.subheader("📊 Export Preview")
                         export_df = pd.DataFrame(trades_to_export)
                         st.dataframe(export_df.head(20), use_container_width=True)
@@ -4703,18 +4714,18 @@ if trades:
             level_info = calculate_level(total_xp)
             
             # Display header with level and XP
-            col1, col2, col3, col4 = st.columns(4)
+                        col1, col2, col3, col4 = st.columns(4)
             
-            with col1:
+                        with col1:
                 st.metric("Level", level_info['current_level'], help="Your current trader level")
             
-            with col2:
+                        with col2:
                 st.metric("Title", level_info['title'])
             
-            with col3:
+                        with col3:
                 st.metric("Total XP", f"{total_xp:,}", help="Experience points earned")
             
-            with col4:
+                        with col4:
                 if level_info['next_level']:
                     st.metric("To Next Level", f"{level_info['xp_to_next_level']:,} XP")
                 else:
@@ -4727,9 +4738,9 @@ if trades:
                 progress = (total_xp - current_level_start) / (next_level_xp - current_level_start)
                 st.progress(progress)
                 st.caption(f"Level {level_info['current_level']} → Level {level_info['next_level']['level']}")
-            
-            st.divider()
-            
+                        
+                        st.divider()
+                        
             # Tabs for different gamification aspects
             tab1, tab2, tab3, tab4 = st.tabs(["🏅 Achievements", "📊 Stats & Streaks", "🎯 Weekly Challenges", "📈 Level Progress"])
             
@@ -4741,7 +4752,7 @@ if trades:
                 unlocked_count = len(user_achievements)
                 completion_pct = (unlocked_count / total_achievements * 100) if total_achievements > 0 else 0
                 
-                col1, col2, col3 = st.columns(3)
+                                col1, col2, col3 = st.columns(3)
                 with col1:
                     st.metric("Unlocked", f"{unlocked_count}/{total_achievements}")
                 with col2:
@@ -4792,7 +4803,7 @@ if trades:
                 
                 # Current streaks
                 col1, col2, col3 = st.columns(3)
-                with col1:
+                                with col1:
                     st.metric("Current Win Streak", f"{streaks['current_win_streak']} 🔥")
                 with col2:
                     st.metric("Current Loss Streak", f"{streaks['current_loss_streak']} ❄️")
@@ -4807,7 +4818,7 @@ if trades:
                 
                 with col1:
                     st.metric("Total Trades", stats['total_trades'])
-                with col2:
+                                with col2:
                     st.metric("Win Rate", f"{stats['win_rate']:.1f}%")
                 with col3:
                     st.metric("Total P&L", f"€{stats['total_pnl']:.2f}")
@@ -4857,7 +4868,7 @@ if trades:
                         st.metric("Trades", len(week_trades))
                     with col2:
                         st.metric("Win Rate", f"{week_wr:.1f}%")
-                    with col3:
+                                with col3:
                         st.metric("P&L", f"€{week_pnl:.2f}")
             
             with tab4:
@@ -4876,7 +4887,7 @@ if trades:
                         # Future levels
                         st.caption(f"🔒 Level {level['level']}: {level['title']} ({level['xp']:,} XP)")
                 
-                st.divider()
+                                    st.divider()
                 
                 # XP sources
                 st.subheader("💡 How to Earn XP")
@@ -4887,130 +4898,344 @@ if trades:
                 - **Journal Your Trades** - Add notes and analysis to earn extra XP
                 """)
     
-    # PAGE: Mentor Mode
+    # PAGE: Mentor Mode v2
     if selected_page == "👨‍🏫 Mentor Mode":
-        st.header("👨‍🏫 Mentor Mode")
-        st.info("💡 Share your journal with a mentor or coach for feedback and accountability")
+        st.header("👨‍🏫 Mentor Mode v2")
+        st.info("💡 Get feedback, track improvement, and receive personalized suggestions")
         
-        # Mentor mode settings
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
-            st.subheader("📤 Share Your Journal")
+        if not MENTOR_SYSTEM_AVAILABLE:
+            st.error("❌ Mentor System module not available")
+                    else:
+            tab1, tab2, tab3, tab4 = st.tabs(["💬 Trade Comments", "📊 Feedback Sessions", "💡 Suggestions", "👥 Share Settings"])
             
-            share_enabled = st.checkbox(
-                "Enable Journal Sharing",
-                key="mentor_share_enabled",
-                help="Allow a mentor to view your trades and provide feedback"
-            )
-            
-            if share_enabled:
-                # Generate shareable code (using user ID for simplicity)
-                share_code = f"TJ-{current_user['id']}-{current_user['username'][:4].upper()}"
+            with tab1:
+                st.subheader("💬 Trade Comments & Reviews")
+                st.write("Add comments and ratings to your trades for better analysis")
                 
-                st.success(f"**Your Share Code:** `{share_code}`")
-                st.caption("Share this code with your mentor. They can use it to view your journal.")
-                
-                # Display what mentor can see
-                with st.expander("👁️ What can mentors see?", expanded=False):
-                    st.markdown("""
-                    **Your mentor will be able to see:**
-                    - ✅ All your trades and performance metrics
-                    - ✅ Charts and analytics
-                    - ✅ Psychology analysis
-                    - ✅ Daily journal notes
-                    
-                    **Your mentor will NOT be able to:**
-                    - ❌ Edit or delete your trades
-                    - ❌ See your account balances
-                    - ❌ Access your password or personal info
-                    """)
+                if len(trades) == 0:
+                    st.warning("📊 No trades to comment on yet")
             else:
-                st.warning("⚠️ Journal sharing is currently disabled")
-        
-        with col2:
-            st.subheader("📊 Mentor Stats")
-            
-            if share_enabled:
-                st.metric("Share Status", "🟢 Active")
-                st.metric("Share Code", share_code)
-            else:
-                st.metric("Share Status", "🔴 Inactive")
-        
-        st.divider()
-        
-        # View as Mentor section (for admin)
-        if current_user['username'] == 'admin':
-            st.subheader("👨‍🏫 View Student Journals (Admin)")
-            
-            all_users = load_users()
-            other_users = [u for u in all_users if u['id'] != current_user['id']]
-            
-            if len(other_users) > 0:
-                selected_student = st.selectbox(
-                    "Select Student",
-                    other_users,
-                    format_func=lambda u: f"{u['display_name']} (@{u['username']})",
-                    key="mentor_student_select"
-                )
-                
-                if selected_student:
-                    student_trades = load_trades(selected_student['id'])
+                    # Select trade to comment on
+                    trade_options = [(t['id'], f"{t['date']} - {t['symbol']} - €{t['pnl']:.2f}") for t in sorted(trades, key=lambda x: x['date'], reverse=True)[:20]]
                     
-                    if len(student_trades) > 0:
-                        student_df = pd.DataFrame(student_trades)
-                        student_df['date'] = pd.to_datetime(student_df['date'])
-                        student_df = student_df.sort_values('date', ascending=False)
+                    selected_trade_id = st.selectbox(
+                        "Select Trade",
+                        [t[0] for t in trade_options],
+                        format_func=lambda x: next((t[1] for t in trade_options if t[0] == x), ""),
+                        key="comment_trade_select"
+                    )
+                    
+                    if selected_trade_id:
+                        selected_trade = next((t for t in trades if t['id'] == selected_trade_id), None)
                         
-                        # Show student metrics
-                        st.info(f"📊 **{selected_student['display_name']}'s** Performance")
-                        
-                        student_metrics = calculate_metrics(student_df)
-                        
-                        col1, col2, col3, col4 = st.columns(4)
-                        with col1:
-                            st.metric("Total Trades", student_metrics['total_trades'])
-                        with col2:
-                            st.metric("Win Rate", f"{student_metrics['win_rate']:.1f}%")
-                        with col3:
-                            st.metric("Total P&L", f"{currency}{student_metrics['total_profit']:.2f}")
-                        with col4:
-                            st.metric("Profit Factor", f"{student_metrics['profit_factor']:.2f}")
-                        
-                        st.divider()
-                        
-                        # Show recent trades
-                        st.subheader("📋 Recent Trades")
-                        recent_student_trades = student_df.head(10)
-                        
-                        for idx, row in recent_student_trades.iterrows():
-                            with st.expander(f"{row['date'].strftime('%Y-%m-%d')} - {row['symbol']} ({row['side']}) - {currency}{row['pnl']:.2f}"):
-                                col1, col2, col3 = st.columns(3)
+                        if selected_trade:
+                            # Show trade details
+                            col1, col2, col3, col4 = st.columns(4)
+                            with col1:
+                                st.metric("Symbol", selected_trade['symbol'])
+                            with col2:
+                                st.metric("Direction", selected_trade['direction'])
+                            with col3:
+                                st.metric("P&L", f"€{selected_trade['pnl']:.2f}")
+                            with col4:
+                                st.metric("Setup", selected_trade.get('setup', 'N/A'))
+                            
+                            st.divider()
+                            
+                            # Add new comment
+                            with st.expander("➕ Add New Comment", expanded=False):
+                                col1, col2 = st.columns([3, 1])
                                 
                                 with col1:
-                                    st.write(f"**Entry:** {currency}{row['entry_price']:.2f}")
-                                    st.write(f"**Exit:** {currency}{row['exit_price']:.2f}")
-                                    st.write(f"**Quantity:** {row['quantity']}")
+                                    comment_type = st.selectbox(
+                                        "Comment Type",
+                                        ["general", "praise", "improvement", "warning", "question"],
+                                        key="new_comment_type"
+                                    )
                                 
                                 with col2:
-                                    st.write(f"**Setup:** {row['setup']}")
-                                    st.write(f"**Mood:** {row.get('mood', 'N/A')}")
-                                    st.write(f"**Confidence:** {row.get('pre_trade_confidence', 'N/A')}/5")
+                                    rating = st.slider("Rating", 1, 5, 3, key="new_comment_rating")
                                 
-                                with col3:
-                                    st.write(f"**P&L:** {currency}{row['pnl']:.2f}")
-                                    st.write(f"**R-Multiple:** {row['r_multiple']:.2f}R")
-                                    st.write(f"**Duration:** {row.get('duration_minutes', 0)} min")
+                                commenter_name = st.text_input("Your Name", value=current_user.get('display_name', 'Trader'), key="commenter_name")
+                                comment_text = st.text_area("Comment", key="new_comment_text")
                                 
-                                if row.get('notes'):
-                                    st.divider()
-                                    st.write(f"**Notes:** {row['notes']}")
-                    else:
-                        st.info(f"👤 {selected_student['display_name']} has no trades yet")
-            else:
-                st.info("👥 No other users to mentor yet")
+                                if st.button("💬 Add Comment", type="primary"):
+                                    if comment_text:
+                                        add_trade_comment(selected_trade_id, commenter_name, comment_text, comment_type, rating)
+                                        st.success("✅ Comment added!")
+                                        st.rerun()
         else:
-            st.info("👨‍🏫 Mentor view is available for admin users")
+                                        st.error("Please enter a comment")
+                            
+                            # Show existing comments
+                            st.subheader("📝 Comments")
+                            comments = get_comments_for_trade(selected_trade_id)
+                            
+                            if comments:
+                                for comment in sorted(comments, key=lambda x: x['timestamp'], reverse=True):
+                                    # Color code by type
+                                    type_colors = {
+                                        "praise": "🟢",
+                                        "improvement": "🟡",
+                                        "warning": "🔴",
+                                        "question": "🔵",
+                                        "general": "⚪"
+                                    }
+                                    
+                                    icon = type_colors.get(comment.get('comment_type', 'general'), "⚪")
+                                    rating_stars = "⭐" * comment.get('rating', 0) if comment.get('rating') else ""
+                                    
+                                    st.markdown(f"{icon} **{comment['commenter_name']}** {rating_stars}")
+                                    st.write(comment['comment_text'])
+                                    st.caption(f"{comment['timestamp']} {'(edited)' if comment.get('edited') else ''}")
+                                    st.divider()
+                            else:
+                                st.info("No comments yet. Be the first to add one!")
+            
+            with tab2:
+                st.subheader("📊 Feedback Sessions")
+                st.write("Track structured feedback from mentors or self-reviews")
+                
+                # Get feedback sessions
+                feedback_sessions = get_feedback_for_user(current_user['id'])
+                
+                col1, col2 = st.columns([3, 1])
+                
+                with col2:
+                    if st.button("➕ New Session", type="primary", use_container_width=True):
+                        mentor_name = st.session_state.get('new_session_mentor', current_user.get('display_name', 'Self'))
+                        create_feedback_session(current_user['id'], mentor_name, "ad-hoc")
+                        st.success("✅ New feedback session created!")
+                        st.rerun()
+                
+                with col1:
+                    st.metric("Total Sessions", len(feedback_sessions))
+                
+                st.divider()
+                
+                if feedback_sessions:
+                    # Show most recent session
+                    latest = get_latest_feedback(current_user['id'])
+                    
+                    if latest:
+                        st.subheader("🆕 Latest Feedback Session")
+                        
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("Mentor", latest['mentor_name'])
+                        with col2:
+                            st.metric("Date", latest['created_at'][:10])
+                        with col3:
+                            status_emoji = "🟢" if latest['status'] == "completed" else "🟡"
+                            st.metric("Status", f"{status_emoji} {latest['status'].title()}")
+                        
+                        if latest.get('overall_rating'):
+                            st.metric("Overall Rating", "⭐" * latest['overall_rating'])
+                        
+                        # Strengths
+                        if latest.get('strengths'):
+                            st.write("**✅ Strengths:**")
+                            for strength in latest['strengths']:
+                                st.success(f"• {strength}")
+                        
+                        # Improvements
+                        if latest.get('improvements'):
+                            st.write("**🎯 Areas for Improvement:**")
+                            for improvement in latest['improvements']:
+                                st.warning(f"• {improvement}")
+                        
+                        # Action items
+                        if latest.get('action_items'):
+                            st.write("**📋 Action Items:**")
+                            for action in latest['action_items']:
+                                st.info(f"• {action}")
+                        
+                        # Notes
+                        if latest.get('notes'):
+                            st.divider()
+                            st.write("**📝 Notes:**")
+                            st.write(latest['notes'])
+                        
+                        st.divider()
+                    
+                    # Edit session form (admin only)
+                    if current_user['username'] == 'admin' and feedback_sessions:
+                        with st.expander("✏️ Edit Feedback Session (Admin)"):
+                            session_to_edit = st.selectbox(
+                                "Select Session",
+                                feedback_sessions,
+                                format_func=lambda s: f"{s['created_at'][:10]} - {s['mentor_name']}",
+                                key="edit_session_select"
+                            )
+                            
+                            if session_to_edit:
+                                st.write(f"**Editing Session #{session_to_edit['id']}**")
+                                
+                                strengths_text = st.text_area(
+                                    "Strengths (one per line)",
+                                    value="\n".join(session_to_edit.get('strengths', [])),
+                                    key="edit_strengths"
+                                )
+                                
+                                improvements_text = st.text_area(
+                                    "Improvements (one per line)",
+                                    value="\n".join(session_to_edit.get('improvements', [])),
+                                    key="edit_improvements"
+                                )
+                                
+                                action_items_text = st.text_area(
+                                    "Action Items (one per line)",
+                                    value="\n".join(session_to_edit.get('action_items', [])),
+                                    key="edit_actions"
+                                )
+                                
+                                overall_rating = st.slider("Overall Rating", 1, 5, session_to_edit.get('overall_rating', 3), key="edit_rating")
+                                
+                                notes = st.text_area("Notes", value=session_to_edit.get('notes', ''), key="edit_notes")
+                                
+                                status = st.selectbox("Status", ["in_progress", "completed"], 
+                                                    index=0 if session_to_edit['status'] == "in_progress" else 1,
+                                                    key="edit_status")
+                                
+                                if st.button("💾 Save Changes"):
+                                    update_feedback_session(
+                                        session_to_edit['id'],
+                                        strengths=[s.strip() for s in strengths_text.split('\n') if s.strip()],
+                                        improvements=[i.strip() for i in improvements_text.split('\n') if i.strip()],
+                                        action_items=[a.strip() for a in action_items_text.split('\n') if a.strip()],
+                                        overall_rating=overall_rating,
+                                        notes=notes,
+                                        status=status
+                                    )
+                                    st.success("✅ Feedback session updated!")
+                                    st.rerun()
+                    
+                    # Show all sessions
+                    st.subheader("📜 All Feedback Sessions")
+                    for session in sorted(feedback_sessions, key=lambda x: x['created_at'], reverse=True):
+                        with st.expander(f"{session['created_at'][:10]} - {session['mentor_name']} - {session['status'].title()}"):
+                            if session.get('overall_rating'):
+                                st.write(f"**Rating:** {'⭐' * session['overall_rating']}")
+                            
+                            if session.get('strengths'):
+                                st.write("**Strengths:** " + ", ".join(session['strengths']))
+                            
+                            if session.get('improvements'):
+                                st.write("**Improvements:** " + ", ".join(session['improvements']))
+                            
+                            if session.get('action_items'):
+                                st.write("**Actions:** " + ", ".join(session['action_items']))
+                else:
+                    st.info("No feedback sessions yet. Create your first one!")
+            
+            with tab3:
+                st.subheader("💡 Personalized Suggestions")
+                st.write("AI-powered suggestions based on your trading performance")
+                
+                if len(trades) < 5:
+                    st.warning("📊 Log at least 5 trades to receive personalized suggestions")
+                else:
+                    suggestions = generate_suggestions_from_trades(trades)
+                    
+                    # Group by priority
+                    high_priority = [s for s in suggestions if s.get('priority') == 'high']
+                    medium_priority = [s for s in suggestions if s.get('priority') == 'medium']
+                    low_priority = [s for s in suggestions if s.get('priority') == 'low']
+                    
+                    if high_priority:
+                        st.subheader("🔴 High Priority")
+                        for sug in high_priority:
+                            if sug['type'] == 'warning':
+                                st.error(f"**{sug['title']}**")
+                            elif sug['type'] == 'success':
+                                st.success(f"**{sug['title']}**")
+                            else:
+                                st.warning(f"**{sug['title']}**")
+                            
+                            st.write(sug['message'])
+                            if sug.get('action'):
+                                st.info(f"💡 **Action:** {sug['action']}")
+                            st.divider()
+                    
+                    if medium_priority:
+                        st.subheader("🟡 Medium Priority")
+                        for sug in medium_priority:
+                            if sug['type'] == 'success':
+                                st.success(f"**{sug['title']}**")
+                            else:
+                                st.info(f"**{sug['title']}**")
+                            
+                            st.write(sug['message'])
+                            if sug.get('action'):
+                                st.caption(f"💡 **Action:** {sug['action']}")
+                            st.divider()
+                    
+                    if low_priority:
+                        with st.expander("🟢 Low Priority Suggestions"):
+                            for sug in low_priority:
+                                st.write(f"**{sug['title']}**")
+                                st.write(sug['message'])
+                                if sug.get('action'):
+                                    st.caption(f"💡 {sug['action']}")
+                                st.divider()
+            
+            with tab4:
+                st.subheader("👥 Share Settings")
+                st.write("Control who can view your journal and provide feedback")
+                
+                col1, col2 = st.columns([2, 1])
+                
+                with col1:
+                    share_enabled = st.checkbox(
+                        "Enable Journal Sharing",
+                        key="mentor_share_enabled",
+                        help="Allow mentors to view your trades and provide feedback"
+                    )
+                    
+                    if share_enabled:
+                        # Generate shareable code
+                        share_code = f"TJ-{current_user['id']}-{current_user['username'][:4].upper()}"
+                        
+                        st.success(f"**Your Share Code:** `{share_code}`")
+                        st.caption("Share this code with your mentor")
+                        
+                        # Permissions
+                        st.write("**Permissions:**")
+                        allow_comments = st.checkbox("Allow comments on trades", value=True, key="allow_comments")
+                        allow_feedback = st.checkbox("Allow feedback sessions", value=True, key="allow_feedback")
+                        
+                        # Display what mentor can see
+                        with st.expander("👁️ What can mentors see?"):
+                            st.markdown("""
+                            **✅ Mentors can:**
+                            - View all your trades and metrics
+                            - Add comments and ratings to trades
+                            - Create feedback sessions
+                            - View analytics and psychology data
+                            
+                            **❌ Mentors cannot:**
+                            - Edit or delete trades
+                            - Access account balances
+                            - See passwords or personal info
+                            """)
+                    else:
+                        st.warning("⚠️ Journal sharing is disabled")
+                
+                with col2:
+                    st.subheader("📊 Stats")
+                    
+                    if share_enabled:
+                        st.metric("Status", "🟢 Active")
+                        
+                        # Get mentor stats
+                        stats = get_mentor_statistics(current_user['id'], trades)
+                        st.metric("Comments", stats['total_comments'])
+                        st.metric("Sessions", stats['total_feedback_sessions'])
+                        
+                        if stats.get('average_rating'):
+                            st.metric("Avg Rating", f"{'⭐' * int(stats['average_rating'])}")
+                    else:
+                        st.metric("Status", "🔴 Inactive")
 
 else:
     st.info("🎯 No trades yet. Add your first trade in the 'Add Trade' tab!")
