@@ -1223,31 +1223,6 @@ else:
 
 st.write("")
 
-# ===== RISK ALERTS SYSTEM =====
-if ALERTS_AVAILABLE and len(trades) >= 5:
-    # Check for active alerts
-    active_alerts = check_all_alerts(trades, DEFAULT_THRESHOLDS, account_size=10000)
-    
-    if active_alerts:
-        # Separate by severity
-        critical_alerts = [a for a in active_alerts if a.severity == "CRITICAL"]
-        warning_alerts = [a for a in active_alerts if a.severity == "WARNING"]
-        
-        # Display critical alerts
-        if critical_alerts:
-            for alert in critical_alerts:
-                st.error(alert.message)
-        
-        # Display warnings in expandable section
-        if warning_alerts:
-            with st.expander(f"⚠️ {len(warning_alerts)} Warning(s) - Click to view", expanded=False):
-                for alert in warning_alerts:
-                    st.warning(alert.message)
-        
-        st.divider()
-
-st.write("")
-
 # ===== QUOTES SLIDER WITH MANUAL ROTATION =====
 quotes = load_quotes()
 active_quotes = [q for q in quotes if q.get('active', True)]
@@ -1423,6 +1398,29 @@ trades = load_trades(current_user['id'])
 accounts = load_accounts(current_user['id'])
 settings = load_settings()
 currency = settings.get('currency', '$')
+
+# ===== RISK ALERTS SYSTEM =====
+if ALERTS_AVAILABLE and len(trades) >= 5:
+    # Check for active alerts
+    active_alerts = check_all_alerts(trades, DEFAULT_THRESHOLDS, account_size=10000)
+    
+    if active_alerts:
+        # Separate by severity
+        critical_alerts = [a for a in active_alerts if a.severity == "CRITICAL"]
+        warning_alerts = [a for a in active_alerts if a.severity == "WARNING"]
+        
+        # Display critical alerts
+        if critical_alerts:
+            for alert in critical_alerts:
+                st.error(alert.message)
+        
+        # Display warnings in expandable section
+        if warning_alerts:
+            with st.expander(f"⚠️ {len(warning_alerts)} Warning(s) - Click to view", expanded=False):
+                for alert in warning_alerts:
+                    st.warning(alert.message)
+        
+        st.divider()
 
 # Check if in mentor mode
 is_mentor_mode = st.session_state.get('mentor_mode', False)
