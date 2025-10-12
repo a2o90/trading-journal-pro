@@ -203,6 +203,46 @@ def init_database():
             UNIQUE(user_id)
         )
     """)
+    
+    # Create default admin user if not exists
+    import os
+    admin_password = os.environ.get('ADMIN_PASSWORD', 'ChangeMe123!')
+    
+    # Check if admin exists
+    admin_exists = execute_query("""
+        SELECT id FROM users WHERE username = 'admin'
+    """, fetchone=True)
+    
+    if not admin_exists:
+        # Create admin user
+        admin_result = execute_query("""
+            INSERT INTO users (username, password, display_name, created_at)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id
+        """, ('admin', admin_password, 'Admin', datetime.now().strftime('%Y-%m-%d')), fetchone=True)
+        
+        if admin_result:
+            admin_id = admin_result['id']
+            # Create default Main Account for admin
+            execute_query("""
+                INSERT INTO accounts (user_id, name, size)
+                VALUES (%s, %s, %s)
+            """, (admin_id, 'Main Account', 10000))
+            
+            # Add some default quotes
+            default_quotes = [
+                ("The market is a device for transferring money from the impatient to the patient.", "Warren Buffett"),
+                ("Risk comes from not knowing what you're doing.", "Warren Buffett"),
+                ("In trading, discipline and patience are more important than intelligence.", "Trading Wisdom"),
+                ("The goal is not to be right, but to make money.", "Trading Psychology"),
+                ("Your biggest enemy in trading is yourself.", "Trading Wisdom")
+            ]
+            
+            for quote_text, quote_author in default_quotes:
+                execute_query("""
+                    INSERT INTO quotes (text, author, active)
+                    VALUES (%s, %s, %s)
+                """, (quote_text, quote_author, True))
 
 # ===== USER FUNCTIONS =====
 
