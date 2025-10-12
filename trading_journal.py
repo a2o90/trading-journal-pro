@@ -12,11 +12,16 @@ ACCOUNTS_FILE = "accounts.json"
 SETTINGS_FILE = "settings.json"
 USERS_FILE = "users.json"
 NOTES_FILE = "daily_notes.json"
+MISTAKES_FILE = "mistakes.json"
+AVOIDED_TRADES_FILE = "avoided_trades.json"
+PRETRADE_ANALYSIS_FILE = "pretrade_analysis.json"
+QUOTES_FILE = "quotes.json"
+MINDSET_CHECKINS_FILE = "mindset_checkins.json"
 ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
 
 # App Version
-APP_VERSION = "2.4.1"
-LAST_UPDATE = "2025-10-11"
+APP_VERSION = "3.0.0"
+LAST_UPDATE = "2025-10-12"
 
 # ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
 
@@ -325,6 +330,195 @@ def save_settings(settings):
     """Save app settings"""
     with open(SETTINGS_FILE, 'w') as f:
         json.dump(settings, f, indent=2)
+
+# ===== MISTAKES MANAGEMENT =====
+
+def load_mistakes(user_id=None):
+    """Load mistakes from JSON file"""
+    if os.path.exists(MISTAKES_FILE):
+        try:
+            with open(MISTAKES_FILE, 'r') as f:
+                mistakes = json.load(f)
+                if user_id is not None:
+                    return [m for m in mistakes if m.get('user_id') == user_id]
+                return mistakes
+        except:
+            return []
+    return []
+
+def save_mistakes(mistakes):
+    """Save mistakes to JSON file"""
+    with open(MISTAKES_FILE, 'w') as f:
+        json.dump(mistakes, f, indent=2)
+
+def add_mistake(user_id, mistake_type, description, trade_id=None):
+    """Add a new mistake"""
+    mistakes = load_mistakes()
+    new_id = max([m['id'] for m in mistakes], default=-1) + 1
+    mistake = {
+        'id': new_id,
+        'user_id': user_id,
+        'date': datetime.now().strftime('%Y-%m-%d'),
+        'time': datetime.now().strftime('%H:%M:%S'),
+        'mistake_type': mistake_type,
+        'description': description,
+        'trade_id': trade_id
+    }
+    mistakes.append(mistake)
+    save_mistakes(mistakes)
+    return mistake
+
+# ===== AVOIDED TRADES =====
+
+def load_avoided_trades(user_id=None):
+    """Load avoided trades from JSON file"""
+    if os.path.exists(AVOIDED_TRADES_FILE):
+        try:
+            with open(AVOIDED_TRADES_FILE, 'r') as f:
+                avoided = json.load(f)
+                if user_id is not None:
+                    return [a for a in avoided if a.get('user_id') == user_id]
+                return avoided
+        except:
+            return []
+    return []
+
+def save_avoided_trades(avoided):
+    """Save avoided trades to JSON file"""
+    with open(AVOIDED_TRADES_FILE, 'w') as f:
+        json.dump(avoided, f, indent=2)
+
+def add_avoided_trade(user_id, symbol, reason, potential_loss=0, notes=""):
+    """Add a new avoided trade"""
+    avoided = load_avoided_trades()
+    new_id = max([a['id'] for a in avoided], default=-1) + 1
+    trade = {
+        'id': new_id,
+        'user_id': user_id,
+        'date': datetime.now().strftime('%Y-%m-%d'),
+        'time': datetime.now().strftime('%H:%M:%S'),
+        'symbol': symbol,
+        'reason': reason,
+        'potential_loss': potential_loss,
+        'notes': notes
+    }
+    avoided.append(trade)
+    save_avoided_trades(avoided)
+    return trade
+
+# ===== PRE-TRADE ANALYSIS =====
+
+def load_pretrade_analysis(user_id=None):
+    """Load pre-trade analysis from JSON file"""
+    if os.path.exists(PRETRADE_ANALYSIS_FILE):
+        try:
+            with open(PRETRADE_ANALYSIS_FILE, 'r') as f:
+                analysis = json.load(f)
+                if user_id is not None:
+                    return [a for a in analysis if a.get('user_id') == user_id]
+                return analysis
+        except:
+            return []
+    return []
+
+def save_pretrade_analysis(analysis):
+    """Save pre-trade analysis to JSON file"""
+    with open(PRETRADE_ANALYSIS_FILE, 'w') as f:
+        json.dump(analysis, f, indent=2)
+
+def add_pretrade_analysis(user_id, symbol, direction, entry_plan, stop_loss, take_profit, risk_reward, confidence, checklist):
+    """Add a new pre-trade analysis"""
+    analysis = load_pretrade_analysis()
+    new_id = max([a['id'] for a in analysis], default=-1) + 1
+    pretrade = {
+        'id': new_id,
+        'user_id': user_id,
+        'date': datetime.now().strftime('%Y-%m-%d'),
+        'time': datetime.now().strftime('%H:%M:%S'),
+        'symbol': symbol,
+        'direction': direction,
+        'entry_plan': entry_plan,
+        'stop_loss': stop_loss,
+        'take_profit': take_profit,
+        'risk_reward': risk_reward,
+        'confidence': confidence,
+        'checklist': checklist,
+        'executed': False,
+        'trade_id': None
+    }
+    analysis.append(pretrade)
+    save_pretrade_analysis(analysis)
+    return pretrade
+
+# ===== QUOTES SYSTEM =====
+
+def load_quotes():
+    """Load quotes from JSON file"""
+    if os.path.exists(QUOTES_FILE):
+        try:
+            with open(QUOTES_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            return []
+    return []
+
+def save_quotes(quotes):
+    """Save quotes to JSON file"""
+    with open(QUOTES_FILE, 'w') as f:
+        json.dump(quotes, f, indent=2)
+
+def add_quote(text, author=""):
+    """Add a new quote (admin only)"""
+    quotes = load_quotes()
+    new_id = max([q['id'] for q in quotes], default=-1) + 1
+    quote = {
+        'id': new_id,
+        'text': text,
+        'author': author,
+        'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'active': True
+    }
+    quotes.append(quote)
+    save_quotes(quotes)
+    return quote
+
+# ===== MINDSET CHECK-INS =====
+
+def load_mindset_checkins(user_id=None):
+    """Load mindset check-ins from JSON file"""
+    if os.path.exists(MINDSET_CHECKINS_FILE):
+        try:
+            with open(MINDSET_CHECKINS_FILE, 'r') as f:
+                checkins = json.load(f)
+                if user_id is not None:
+                    return [c for c in checkins if c.get('user_id') == user_id]
+                return checkins
+        except:
+            return []
+    return []
+
+def save_mindset_checkins(checkins):
+    """Save mindset check-ins to JSON file"""
+    with open(MINDSET_CHECKINS_FILE, 'w') as f:
+        json.dump(checkins, f, indent=2)
+
+def add_mindset_checkin(user_id, focus_level, locked_in, emotional_state, notes=""):
+    """Add a new mindset check-in"""
+    checkins = load_mindset_checkins()
+    new_id = max([c['id'] for c in checkins], default=-1) + 1
+    checkin = {
+        'id': new_id,
+        'user_id': user_id,
+        'date': datetime.now().strftime('%Y-%m-%d'),
+        'time': datetime.now().strftime('%H:%M:%S'),
+        'focus_level': focus_level,
+        'locked_in': locked_in,
+        'emotional_state': emotional_state,
+        'notes': notes
+    }
+    checkins.append(checkin)
+    save_mindset_checkins(checkins)
+    return checkin
 
 def load_accounts(user_id=None):
     """Load accounts from JSON file, optionally filtered by user_id"""
@@ -795,6 +989,156 @@ with header_col3:
     """, unsafe_allow_html=True)
 
 st.write("")
+
+# ===== QUOTES SLIDER =====
+quotes = load_quotes()
+active_quotes = [q for q in quotes if q.get('active', True)]
+if active_quotes:
+    import random
+    if 'current_quote_idx' not in st.session_state:
+        st.session_state['current_quote_idx'] = 0
+    
+    # Get current quote
+    quote_idx = st.session_state['current_quote_idx'] % len(active_quotes)
+    current_quote = active_quotes[quote_idx]
+    
+    # Display sliding quote banner
+    st.markdown(f"""
+    <style>
+        @keyframes slideIn {{
+            from {{ transform: translateX(-100%); opacity: 0; }}
+            to {{ transform: translateX(0); opacity: 1; }}
+        }}
+        .quote-banner {{
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 136, 255, 0.1) 100%);
+            border-left: 4px solid #00ff88;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 10px 0 20px 0;
+            animation: slideIn 0.8s ease-out;
+            box-shadow: 0 2px 8px rgba(0, 255, 136, 0.2);
+        }}
+        .quote-text {{
+            font-size: 16px;
+            font-style: italic;
+            margin: 0;
+            color: #e0e0e0;
+        }}
+        .quote-author {{
+            font-size: 14px;
+            text-align: right;
+            margin-top: 8px;
+            color: #00ff88;
+            font-weight: 600;
+        }}
+    </style>
+    <div class="quote-banner">
+        <p class="quote-text">"{current_quote['text']}"</p>
+        <p class="quote-author">— {current_quote.get('author', 'Trading Wisdom')}</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Auto-rotate quotes every 10 seconds (simulate with rerun - but we'll just rotate on page reload)
+    # For a real auto-rotate, you'd need st.rerun() with time.sleep or use st_autorefresh component
+
+# ===== 15-MINUTE MINDSET CHECK-IN SYSTEM =====
+# Initialize check-in state
+if 'last_checkin_time' not in st.session_state:
+    st.session_state['last_checkin_time'] = datetime.now()
+    st.session_state['show_checkin_alert'] = False
+
+# Check if 15 minutes have passed
+time_since_checkin = datetime.now() - st.session_state['last_checkin_time']
+if time_since_checkin.total_seconds() >= 900:  # 900 seconds = 15 minutes
+    st.session_state['show_checkin_alert'] = True
+
+# Display mindset check-in alert
+if st.session_state.get('show_checkin_alert', False):
+    st.markdown("""
+    <style>
+        @keyframes pulse {{
+            0%, 100% {{ transform: scale(1); }}
+            50% {{ transform: scale(1.02); }}
+        }}
+        .checkin-alert {{
+            background: linear-gradient(135deg, rgba(255, 136, 0, 0.2) 0%, rgba(255, 68, 68, 0.2) 100%);
+            border: 2px solid #ff8800;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            animation: pulse 2s infinite;
+            box-shadow: 0 4px 12px rgba(255, 136, 0, 0.3);
+        }}
+        .checkin-title {{
+            font-size: 20px;
+            font-weight: bold;
+            color: #ff8800;
+            margin-bottom: 10px;
+        }}
+    </style>
+    """, unsafe_allow_html=True)
+    
+    with st.container():
+        st.markdown('<div class="checkin-alert">', unsafe_allow_html=True)
+        st.markdown('<div class="checkin-title">⏰ Mindset Check-In Time!</div>', unsafe_allow_html=True)
+        st.write("Het is tijd om je mindset te checken. Ben je nog steeds gefocust en locked in?")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("✅ Check-in Nu", use_container_width=True, type="primary"):
+                st.session_state['open_checkin_form'] = True
+                st.session_state['show_checkin_alert'] = False
+                st.rerun()
+        
+        with col2:
+            if st.button("⏰ Herinner me over 5 min", use_container_width=True):
+                st.session_state['last_checkin_time'] = datetime.now() - timedelta(minutes=10)  # Will trigger again in 5 min
+                st.session_state['show_checkin_alert'] = False
+                st.rerun()
+        
+        with col3:
+            if st.button("❌ Sluiten", use_container_width=True):
+                st.session_state['last_checkin_time'] = datetime.now()
+                st.session_state['show_checkin_alert'] = False
+                st.rerun()
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# Mindset check-in form (if triggered)
+if st.session_state.get('open_checkin_form', False):
+    with st.form("mindset_checkin_form"):
+        st.subheader("🧠 Mindset Check-In")
+        
+        focus_level = st.slider("Focus Level (1-10)", 1, 10, 5)
+        locked_in = st.radio("Ben je nog steeds locked in?", ["Ja, volledig gefocust", "Beetje afgeleid", "Nee, niet meer gefocust"])
+        emotional_state = st.selectbox("Huidige emotionele staat", 
+                                       ["Calm & Focused", "Excited", "Anxious", "Frustrated", "Tired", "Bored", "Stressed"])
+        notes = st.text_area("Notities (optioneel)", placeholder="Hoe voel je je? Wat speelt er?")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            submit_checkin = st.form_submit_button("✅ Check-in Opslaan", use_container_width=True, type="primary")
+        with col2:
+            cancel_checkin = st.form_submit_button("❌ Annuleren", use_container_width=True)
+        
+        if submit_checkin:
+            add_mindset_checkin(
+                user_id=current_user['id'],
+                focus_level=focus_level,
+                locked_in=locked_in,
+                emotional_state=emotional_state,
+                notes=notes
+            )
+            st.session_state['last_checkin_time'] = datetime.now()
+            st.session_state['open_checkin_form'] = False
+            st.success("✅ Mindset check-in opgeslagen!")
+            st.rerun()
+        
+        if cancel_checkin:
+            st.session_state['open_checkin_form'] = False
+            st.session_state['last_checkin_time'] = datetime.now()
+            st.rerun()
 
 # Force reload data on each run (prevents deleted trades from coming back)
 if 'force_reload' in st.session_state:
@@ -1269,7 +1613,11 @@ with st.sidebar:
     st.header("📊 Filters")
 
 # Create tabs
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(["📝 Add Trade", "📊 All Trades", "📅 Calendar", "💰 Per Symbol", "🧠 Psychology", "📔 Daily Journal", "🎬 Trade Replay", "👨‍🏫 Mentor Mode"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.tabs([
+    "📝 Add Trade", "📊 All Trades", "📅 Calendar", "💰 Per Symbol", 
+    "🧠 Psychology", "📔 Daily Journal", "🎬 Trade Replay", "👨‍🏫 Mentor Mode",
+    "❌ Mistakes", "🛡️ Avoided Trades", "📋 Pre-Trade Plan", "💬 Admin Quotes"
+])
 
 # TAB 1: Add New Trade
 with tab1:
@@ -1331,6 +1679,7 @@ with tab1:
             
             with col1:
                 trade_date = st.date_input("Date", value=datetime.today())
+                trade_time = st.time_input("Time", value=datetime.now().time(), help="Tijd van entry")
                 symbol = st.text_input("Symbol/Pair", placeholder="e.g. MNQ, AAPL")
                 side = st.selectbox("Side", ["Long", "Short"])
                 trade_type = st.selectbox("Trade Type", ["Daytrade", "Swing", "Scalping", "Position"])
@@ -1385,6 +1734,7 @@ with tab1:
                         'account_id': selected_account['id'],
                         'account_name': selected_account['name'],
                         'date': trade_date.strftime('%Y-%m-%d'),
+                        'time': trade_time.strftime('%H:%M:%S'),
                         'symbol': symbol.upper(),
                         'side': side,
                         'entry_price': entry_price,
@@ -2858,6 +3208,458 @@ if trades:
                 st.info("👥 No other users to mentor yet")
         else:
             st.info("👨‍🏫 Mentor view is available for admin users")
+
+# TAB 9: Mistakes Tracking
+with tab9:
+    st.header("❌ Mistakes Tracker")
+    st.markdown("Track en analyseer je trading mistakes om te leren en verbeteren.")
+    
+    if is_mentor_mode:
+        st.warning("🔒 **Read-Only Mode** - Viewing student's mistakes")
+    
+    # Load mistakes for current user
+    user_mistakes = load_mistakes(current_user['id'])
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader("📋 Recent Mistakes")
+        
+        if user_mistakes:
+            # Sort by date and time (newest first)
+            sorted_mistakes = sorted(user_mistakes, key=lambda x: (x['date'], x.get('time', '00:00:00')), reverse=True)
+            
+            for mistake in sorted_mistakes[:20]:  # Show last 20
+                mistake_emoji = "🔴" if mistake.get('mistake_type') in ['Revenge Trading', 'FOMO', 'Overtrading'] else "⚠️"
+                
+                with st.expander(f"{mistake_emoji} {mistake['date']} {mistake.get('time', '')} - {mistake.get('mistake_type', 'Mistake')}"):
+                    st.write(f"**Type:** {mistake.get('mistake_type', 'N/A')}")
+                    st.write(f"**Beschrijving:** {mistake.get('description', 'N/A')}")
+                    if mistake.get('trade_id'):
+                        st.write(f"**Gekoppeld aan trade ID:** {mistake.get('trade_id')}")
+                    
+                    if not is_mentor_mode:
+                        if st.button(f"🗑️ Verwijder", key=f"del_mistake_{mistake['id']}"):
+                            all_mistakes = load_mistakes()
+                            all_mistakes = [m for m in all_mistakes if m['id'] != mistake['id']]
+                            save_mistakes(all_mistakes)
+                            st.success("Mistake verwijderd!")
+                            st.rerun()
+        else:
+            st.info("Nog geen mistakes geregistreerd. Blijf leren en verbeteren!")
+    
+    with col2:
+        st.subheader("📊 Weekly Mistakes")
+        
+        if user_mistakes:
+            # Get mistakes from last 7 days
+            today = datetime.now().date()
+            week_ago = today - timedelta(days=7)
+            
+            weekly_mistakes = [
+                m for m in user_mistakes 
+                if datetime.strptime(m['date'], '%Y-%m-%d').date() >= week_ago
+            ]
+            
+            st.metric("Deze Week", len(weekly_mistakes))
+            
+            # Count by type
+            if weekly_mistakes:
+                mistake_types = {}
+                for m in weekly_mistakes:
+                    mtype = m.get('mistake_type', 'Other')
+                    mistake_types[mtype] = mistake_types.get(mtype, 0) + 1
+                
+                st.write("**Breakdown:**")
+                for mtype, count in sorted(mistake_types.items(), key=lambda x: x[1], reverse=True):
+                    st.write(f"- {mtype}: {count}x")
+        else:
+            st.metric("Deze Week", 0)
+        
+        st.divider()
+        
+        # Monthly stats
+        st.subheader("📅 Maandelijkse Trend")
+        if user_mistakes:
+            month_ago = today - timedelta(days=30)
+            monthly_mistakes = [
+                m for m in user_mistakes 
+                if datetime.strptime(m['date'], '%Y-%m-%d').date() >= month_ago
+            ]
+            st.metric("Laatste 30 Dagen", len(monthly_mistakes))
+        else:
+            st.metric("Laatste 30 Dagen", 0)
+    
+    if not is_mentor_mode:
+        st.divider()
+        st.subheader("➕ Voeg Mistake Toe")
+        
+        with st.form("add_mistake_form"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                mistake_type = st.selectbox("Mistake Type", [
+                    "Revenge Trading", "FOMO", "Overtrading", "No Stop Loss",
+                    "Broke Rules", "Poor Entry", "Early Exit", "Late Exit",
+                    "Emotional Trading", "Lack of Patience", "Other"
+                ])
+            
+            with col2:
+                # Option to link to a trade
+                trade_options = ["Geen trade"] + [f"Trade {t['id']} - {t['symbol']} ({t['date']})" for t in trades]
+                linked_trade = st.selectbox("Koppel aan trade (optioneel)", trade_options)
+            
+            description = st.text_area("Beschrijving", placeholder="Wat ging er mis? Wat kun je hiervan leren?")
+            
+            submit_mistake = st.form_submit_button("✅ Voeg Mistake Toe", use_container_width=True)
+            
+            if submit_mistake:
+                if description:
+                    trade_id = None
+                    if linked_trade != "Geen trade":
+                        # Extract trade ID from selection
+                        trade_id = int(linked_trade.split()[1])
+                    
+                    add_mistake(
+                        user_id=current_user['id'],
+                        mistake_type=mistake_type,
+                        description=description,
+                        trade_id=trade_id
+                    )
+                    st.success("✅ Mistake toegevoegd!")
+                    st.rerun()
+                else:
+                    st.error("Vul een beschrijving in")
+
+# TAB 10: Avoided Trades
+with tab10:
+    st.header("🛡️ Avoided Trades Journal")
+    st.markdown("Documenteer trades die je NIET hebt genomen - soms is niet traden de beste trade!")
+    
+    if is_mentor_mode:
+        st.warning("🔒 **Read-Only Mode** - Viewing student's avoided trades")
+    
+    # Load avoided trades
+    user_avoided = load_avoided_trades(current_user['id'])
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader("📋 Avoided Trades Log")
+        
+        if user_avoided:
+            sorted_avoided = sorted(user_avoided, key=lambda x: (x['date'], x.get('time', '00:00:00')), reverse=True)
+            
+            for avoided in sorted_avoided:
+                with st.expander(f"🛡️ {avoided['date']} {avoided.get('time', '')} - {avoided.get('symbol', 'N/A')}"):
+                    st.write(f"**Symbol:** {avoided.get('symbol', 'N/A')}")
+                    st.write(f"**Reden:** {avoided.get('reason', 'N/A')}")
+                    st.write(f"**Potentiële Loss:** {currency}{avoided.get('potential_loss', 0):.2f}")
+                    if avoided.get('notes'):
+                        st.write(f"**Notities:** {avoided.get('notes')}")
+                    
+                    if not is_mentor_mode:
+                        if st.button(f"🗑️ Verwijder", key=f"del_avoided_{avoided['id']}"):
+                            all_avoided = load_avoided_trades()
+                            all_avoided = [a for a in all_avoided if a['id'] != avoided['id']]
+                            save_avoided_trades(all_avoided)
+                            st.success("Avoided trade verwijderd!")
+                            st.rerun()
+        else:
+            st.info("Nog geen avoided trades gedocumenteerd.")
+    
+    with col2:
+        st.subheader("📊 Statistics")
+        
+        if user_avoided:
+            # Weekly stats
+            today = datetime.now().date()
+            week_ago = today - timedelta(days=7)
+            
+            weekly_avoided = [
+                a for a in user_avoided 
+                if datetime.strptime(a['date'], '%Y-%m-%d').date() >= week_ago
+            ]
+            
+            st.metric("Deze Week", len(weekly_avoided))
+            
+            # Total potential loss saved
+            total_saved = sum([a.get('potential_loss', 0) for a in user_avoided])
+            st.metric("Totaal Bespaarde Loss", f"{currency}{total_saved:.2f}")
+            
+            # Top reasons
+            if user_avoided:
+                reasons = {}
+                for a in user_avoided:
+                    reason = a.get('reason', 'Other')
+                    reasons[reason] = reasons.get(reason, 0) + 1
+                
+                st.write("**Top Redenen:**")
+                for reason, count in sorted(reasons.items(), key=lambda x: x[1], reverse=True)[:5]:
+                    st.write(f"- {reason}: {count}x")
+        else:
+            st.metric("Deze Week", 0)
+            st.metric("Totaal Bespaarde Loss", f"{currency}0.00")
+    
+    if not is_mentor_mode:
+        st.divider()
+        st.subheader("➕ Documenteer Avoided Trade")
+        
+        with st.form("add_avoided_form"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                symbol = st.text_input("Symbol", placeholder="e.g. MNQ, AAPL")
+                reason = st.selectbox("Reden om niet te traden", [
+                    "Setup was niet perfect", "Emotioneel niet ready", "Markt condities niet goed",
+                    "Risk te hoog", "Tegen trading plan", "FOMO herkenning",
+                    "News event", "Low confidence", "Already max positions", "Other"
+                ])
+            
+            with col2:
+                potential_loss = st.number_input("Potentiële Loss (indien getradet)", min_value=0.0, step=10.0, 
+                                                help="Schatting van hoeveel je had kunnen verliezen")
+                
+            notes = st.text_area("Notities", placeholder="Waarom heb je deze trade vermeden? Wat was het signaal?")
+            
+            submit_avoided = st.form_submit_button("✅ Voeg Avoided Trade Toe", use_container_width=True)
+            
+            if submit_avoided:
+                if symbol:
+                    add_avoided_trade(
+                        user_id=current_user['id'],
+                        symbol=symbol.upper(),
+                        reason=reason,
+                        potential_loss=potential_loss,
+                        notes=notes
+                    )
+                    st.success("✅ Avoided trade gedocumenteerd!")
+                    st.rerun()
+                else:
+                    st.error("Vul minimaal een symbol in")
+
+# TAB 11: Pre-Trade Analysis
+with tab11:
+    st.header("📋 Pre-Trade Planning")
+    st.markdown("Plan je trades vooraf - voorbereiding is de sleutel tot succes!")
+    
+    if is_mentor_mode:
+        st.warning("🔒 **Read-Only Mode** - Viewing student's pre-trade plans")
+    
+    # Load pre-trade analysis
+    user_pretrade = load_pretrade_analysis(current_user['id'])
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader("📝 Pre-Trade Plans")
+        
+        if user_pretrade:
+            sorted_pretrade = sorted(user_pretrade, key=lambda x: (x['date'], x.get('time', '00:00:00')), reverse=True)
+            
+            for plan in sorted_pretrade[:15]:
+                status_emoji = "✅" if plan.get('executed') else "⏳"
+                
+                with st.expander(f"{status_emoji} {plan['date']} {plan.get('time', '')} - {plan.get('symbol', 'N/A')} {plan.get('direction', '')}"):
+                    col_a, col_b = st.columns(2)
+                    
+                    with col_a:
+                        st.write(f"**Symbol:** {plan.get('symbol', 'N/A')}")
+                        st.write(f"**Direction:** {plan.get('direction', 'N/A')}")
+                        st.write(f"**Entry Plan:** {plan.get('entry_plan', 'N/A')}")
+                        st.write(f"**Stop Loss:** {plan.get('stop_loss', 'N/A')}")
+                        st.write(f"**Take Profit:** {plan.get('take_profit', 'N/A')}")
+                    
+                    with col_b:
+                        st.write(f"**Risk/Reward:** {plan.get('risk_reward', 'N/A')}")
+                        st.write(f"**Confidence:** {plan.get('confidence', 0)}/10")
+                        st.write(f"**Status:** {'Uitgevoerd' if plan.get('executed') else 'Nog niet uitgevoerd'}")
+                        if plan.get('trade_id'):
+                            st.write(f"**Trade ID:** {plan.get('trade_id')}")
+                    
+                    if plan.get('checklist'):
+                        st.divider()
+                        st.write(f"**Checklist:** {plan.get('checklist')}")
+                    
+                    if not is_mentor_mode:
+                        col_x, col_y = st.columns(2)
+                        with col_x:
+                            if not plan.get('executed') and st.button(f"✅ Mark Executed", key=f"exec_{plan['id']}"):
+                                all_pretrade = load_pretrade_analysis()
+                                for p in all_pretrade:
+                                    if p['id'] == plan['id']:
+                                        p['executed'] = True
+                                save_pretrade_analysis(all_pretrade)
+                                st.success("Gemarkeerd als uitgevoerd!")
+                                st.rerun()
+                        
+                        with col_y:
+                            if st.button(f"🗑️ Verwijder", key=f"del_pretrade_{plan['id']}"):
+                                all_pretrade = load_pretrade_analysis()
+                                all_pretrade = [p for p in all_pretrade if p['id'] != plan['id']]
+                                save_pretrade_analysis(all_pretrade)
+                                st.success("Plan verwijderd!")
+                                st.rerun()
+        else:
+            st.info("Nog geen pre-trade plans gemaakt.")
+    
+    with col2:
+        st.subheader("📊 Statistics")
+        
+        if user_pretrade:
+            executed_count = len([p for p in user_pretrade if p.get('executed')])
+            pending_count = len([p for p in user_pretrade if not p.get('executed')])
+            
+            st.metric("Totaal Plans", len(user_pretrade))
+            st.metric("Uitgevoerd", executed_count)
+            st.metric("Pending", pending_count)
+            
+            if len(user_pretrade) > 0:
+                execution_rate = (executed_count / len(user_pretrade)) * 100
+                st.metric("Execution Rate", f"{execution_rate:.1f}%")
+        else:
+            st.metric("Totaal Plans", 0)
+    
+    if not is_mentor_mode:
+        st.divider()
+        st.subheader("➕ Nieuw Pre-Trade Plan")
+        
+        with st.form("add_pretrade_form"):
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                symbol = st.text_input("Symbol", placeholder="e.g. MNQ, AAPL")
+                direction = st.selectbox("Direction", ["Long", "Short"])
+                entry_plan = st.text_input("Entry Plan", placeholder="e.g. Break above 20000")
+            
+            with col2:
+                stop_loss = st.text_input("Stop Loss", placeholder="e.g. 19950")
+                take_profit = st.text_input("Take Profit", placeholder="e.g. 20100")
+                risk_reward = st.text_input("Risk/Reward", placeholder="e.g. 1:2")
+            
+            with col3:
+                confidence = st.slider("Confidence Level", 1, 10, 5)
+            
+            checklist = st.text_area("Pre-Trade Checklist", 
+                                    placeholder="✓ Setup confirmed\n✓ Risk defined\n✓ Emotionally ready\n✓ Market conditions good",
+                                    height=100)
+            
+            submit_pretrade = st.form_submit_button("✅ Save Pre-Trade Plan", use_container_width=True)
+            
+            if submit_pretrade:
+                if symbol and entry_plan:
+                    add_pretrade_analysis(
+                        user_id=current_user['id'],
+                        symbol=symbol.upper(),
+                        direction=direction,
+                        entry_plan=entry_plan,
+                        stop_loss=stop_loss,
+                        take_profit=take_profit,
+                        risk_reward=risk_reward,
+                        confidence=confidence,
+                        checklist=checklist
+                    )
+                    st.success("✅ Pre-trade plan opgeslagen!")
+                    st.rerun()
+                else:
+                    st.error("Vul minimaal symbol en entry plan in")
+
+# TAB 12: Admin Quotes Management
+with tab12:
+    st.header("💬 Quotes Management")
+    
+    if current_user['username'] == 'admin':
+        st.markdown("Beheer inspirerende quotes die voor alle gebruikers zichtbaar zijn.")
+        
+        # Load quotes
+        all_quotes = load_quotes()
+        
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.subheader("📝 Alle Quotes")
+            
+            if all_quotes:
+                for quote in all_quotes:
+                    status = "🟢 Active" if quote.get('active', True) else "🔴 Inactive"
+                    
+                    with st.expander(f"{status} - {quote['text'][:50]}..."):
+                        st.write(f"**Quote:** {quote['text']}")
+                        st.write(f"**Author:** {quote.get('author', 'Unknown')}")
+                        st.write(f"**Created:** {quote.get('created_at', 'N/A')}")
+                        
+                        col_a, col_b, col_c = st.columns(3)
+                        
+                        with col_a:
+                            if quote.get('active', True):
+                                if st.button(f"❌ Deactivate", key=f"deact_{quote['id']}"):
+                                    for q in all_quotes:
+                                        if q['id'] == quote['id']:
+                                            q['active'] = False
+                                    save_quotes(all_quotes)
+                                    st.success("Quote gedeactiveerd!")
+                                    st.rerun()
+                            else:
+                                if st.button(f"✅ Activate", key=f"act_{quote['id']}"):
+                                    for q in all_quotes:
+                                        if q['id'] == quote['id']:
+                                            q['active'] = True
+                                    save_quotes(all_quotes)
+                                    st.success("Quote geactiveerd!")
+                                    st.rerun()
+                        
+                        with col_b:
+                            if st.button(f"🗑️ Delete", key=f"del_quote_{quote['id']}"):
+                                all_quotes = [q for q in all_quotes if q['id'] != quote['id']]
+                                save_quotes(all_quotes)
+                                st.success("Quote verwijderd!")
+                                st.rerun()
+            else:
+                st.info("Nog geen quotes toegevoegd.")
+        
+        with col2:
+            st.subheader("📊 Statistics")
+            st.metric("Totaal Quotes", len(all_quotes))
+            active_quotes = len([q for q in all_quotes if q.get('active', True)])
+            st.metric("Active Quotes", active_quotes)
+        
+        st.divider()
+        st.subheader("➕ Nieuwe Quote Toevoegen")
+        
+        with st.form("add_quote_form"):
+            quote_text = st.text_area("Quote Text", placeholder="Enter an inspiring trading quote...", height=100)
+            author = st.text_input("Author", placeholder="e.g. Jesse Livermore, Mark Douglas")
+            
+            submit_quote = st.form_submit_button("✅ Add Quote", use_container_width=True)
+            
+            if submit_quote:
+                if quote_text:
+                    add_quote(text=quote_text, author=author)
+                    st.success("✅ Quote toegevoegd!")
+                    st.rerun()
+                else:
+                    st.error("Vul een quote in")
+    else:
+        st.info("🔒 Deze sectie is alleen toegankelijk voor admins")
+        
+        st.divider()
+        st.subheader("💡 Current Quotes")
+        st.markdown("Dit zijn de quotes die je kunt zien in de header:")
+        
+        all_quotes = load_quotes()
+        active_quotes = [q for q in all_quotes if q.get('active', True)]
+        
+        if active_quotes:
+            for quote in active_quotes:
+                st.markdown(f"""
+                <div style='background: rgba(0, 255, 136, 0.1); padding: 15px; border-radius: 8px; margin: 10px 0;
+                            border-left: 3px solid #00ff88;'>
+                    <p style='font-style: italic; margin: 0;'>"{quote['text']}"</p>
+                    <p style='text-align: right; margin-top: 5px; color: #00ff88;'>— {quote.get('author', 'Unknown')}</p>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("Nog geen actieve quotes.")
 
 else:
     st.info("🎯 No trades yet. Add your first trade in the 'Add Trade' tab!")
