@@ -2548,38 +2548,39 @@ if trades:
         
         st.subheader("📊 Performance Metrics")
         
-        # Row 1: Basic metrics
-        col1, col2, col3, col4, col5, col6 = st.columns(6)
-        with col1:
-            color = "normal" if metrics['total_profit'] >= 0 else "inverse"
-            st.metric("💰 Total Profit", f"{currency}{metrics['total_profit']:.2f}", delta=None)
-        with col2:
-            st.metric("📊 Win Rate", f"{metrics['win_rate']:.1f}%")
-        with col3:
-            st.metric("🎯 Expectancy", f"{currency}{metrics['Expectancy']:.2f}")
-        with col4:
-            st.metric("📈 Total Trades", metrics['total_trades'])
-        with col5:
-            st.metric("✅ Wins", metrics['winning_trades'])
-        with col6:
-            st.metric("❌ Losses", metrics['losing_trades'])
-        
-        # Row 2: Average metrics
+        # Create organized metrics in 4 columns x 3 rows
+        # Row 1: Main Performance
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric("💚 Avg Win", f"{currency}{metrics['avg_win']:.2f}")
+            profit_delta = "🟢" if metrics['total_profit'] >= 0 else "🔴"
+            st.metric("💰 Total Profit", f"{currency}{metrics['total_profit']:.2f}")
         with col2:
-            st.metric("❤️ Avg Loss", f"{currency}{metrics['avg_loss']:.2f}")
+            st.metric("📈 Total Trades", metrics['total_trades'])
         with col3:
-            st.metric("📈 Profit Factor", f"{metrics['profit_factor']:.2f}")
+            st.metric("📊 Win Rate", f"{metrics['win_rate']:.1f}%")
         with col4:
-            st.metric("⚡ Sharpe Ratio", f"{metrics['sharpe_ratio']:.2f}")
+            st.metric("🎯 Expectancy", f"{currency}{metrics['Expectancy']:.2f}")
         
-        # Row 3: Risk metrics
-        col1, col2 = st.columns(2)
+        # Row 2: Win/Loss Stats
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric("📉 Max Drawdown", f"{currency}{metrics['max_drawdown']:.2f}")
+            st.metric("✅ Winning Trades", metrics['winning_trades'])
         with col2:
+            st.metric("❌ Losing Trades", metrics['losing_trades'])
+        with col3:
+            st.metric("💚 Avg Win", f"{currency}{metrics['avg_win']:.2f}")
+        with col4:
+            st.metric("❤️ Avg Loss", f"{currency}{metrics['avg_loss']:.2f}")
+        
+        # Row 3: Advanced Metrics
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("📊 Profit Factor", f"{metrics['profit_factor']:.2f}")
+        with col2:
+            st.metric("⚡ Sharpe Ratio", f"{metrics['sharpe_ratio']:.2f}")
+        with col3:
+            st.metric("📉 Max Drawdown", f"{currency}{metrics['max_drawdown']:.2f}")
+        with col4:
             st.metric("📉 Max DD %", f"{metrics['max_drawdown_pct']:.1f}%")
         
         st.divider()
