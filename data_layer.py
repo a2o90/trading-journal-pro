@@ -195,11 +195,11 @@ def load_settings(user_id=None):
                 if 'currency' not in settings:
                     settings['currency'] = "$"
                 if 'dark_mode' not in settings:
-                    settings['dark_mode'] = True
+                    settings['dark_mode'] = False
                 return settings
         except:
-            return {"currency": "$", "dark_mode": True}
-    return {"currency": "$", "dark_mode": True}
+            return {"currency": "$", "dark_mode": False}
+    return {"currency": "$", "dark_mode": False}
 
 def save_settings(settings, user_id=None):
     """Save settings - Database or JSON"""

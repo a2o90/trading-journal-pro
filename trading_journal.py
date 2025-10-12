@@ -121,6 +121,36 @@ def login_page():
     
     st.title("📈 Trading Journal Pro")
     
+    # ===== IMPORTANT DATABASE MIGRATION NOTICE =====
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, rgba(0, 255, 136, 0.15) 0%, rgba(0, 136, 255, 0.15) 100%);
+                padding: 20px; border-radius: 12px; border-left: 5px solid #00ff88;
+                margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0, 255, 136, 0.2);'>
+        <h3 style='color: #00ff88; margin-top: 0;'>🚀 BELANGRIJKE UPDATE!</h3>
+        <p style='font-size: 16px; margin: 10px 0; line-height: 1.6;'>
+            <strong>Vanaf vandaag (12 oktober 2024)</strong> draait Trading Journal Pro op een 
+            <strong style='color: #00ff88;'>PostgreSQL database</strong>!
+        </p>
+        <p style='font-size: 15px; margin: 15px 0 10px 0;'><strong>Dit betekent:</strong></p>
+        <ul style='margin: 5px 0 15px 20px; font-size: 14px; line-height: 1.8;'>
+            <li>✅ <strong>Geen data loss meer</strong> bij updates of redeploys</li>
+            <li>✅ <strong>Veilige opslag</strong> van al je trades en gegevens</li>
+            <li>✅ <strong>Betere performance</strong> en schaalbaarheid</li>
+            <li>✅ <strong>Professionele data bescherming</strong></li>
+        </ul>
+        <div style='background-color: rgba(255, 136, 0, 0.2); padding: 12px; border-radius: 8px; 
+                    border-left: 3px solid #ff8800; margin-top: 15px;'>
+            <p style='margin: 0; font-size: 14px;'>
+                ⚠️ <strong>Actie vereist:</strong> Bestaande gebruikers moeten <strong>opnieuw registreren</strong>. 
+                Je oude data is gearchiveerd, maar de nieuwe database start met een schone lei voor maximale stabiliteit.
+            </p>
+        </div>
+        <p style='margin: 15px 0 0 0; font-size: 13px; opacity: 0.8; text-align: center;'>
+            💾 <em>Alle nieuwe data wordt vanaf nu permanent opgeslagen in de database</em>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
     # Display version info on login page
     from datetime import datetime
     import pytz
@@ -393,11 +423,11 @@ def load_settings():
                 if 'currency' not in settings:
                     settings['currency'] = "$"
                 if 'dark_mode' not in settings:
-                    settings['dark_mode'] = True
+                    settings['dark_mode'] = False
                 return settings
         except:
-            return {"currency": "$", "dark_mode": True}
-    return {"currency": "$", "dark_mode": True}
+            return {"currency": "$", "dark_mode": False}
+    return {"currency": "$", "dark_mode": False}
 
 def save_settings(settings):
     """Save app settings - Uses Database or JSON fallback"""
@@ -888,7 +918,7 @@ st.set_page_config(
 
 # Load settings for dark mode
 settings = load_settings()
-dark_mode = settings.get('dark_mode', True)
+dark_mode = settings.get('dark_mode', False)
 
 # Custom CSS for better styling with dark/light mode support
 if dark_mode:

@@ -209,7 +209,7 @@ def init_database():
             id SERIAL PRIMARY KEY,
             user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
             currency VARCHAR(5) DEFAULT '$',
-            dark_mode BOOLEAN DEFAULT TRUE,
+            dark_mode BOOLEAN DEFAULT FALSE,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(user_id)
         )
@@ -413,8 +413,8 @@ def db_load_settings(user_id=None):
     if result:
         return dict(result)
     else:
-        # Return defaults
-        return {"currency": "$", "dark_mode": True}
+        # Return defaults (light mode is default)
+        return {"currency": "$", "dark_mode": False}
 
 def db_save_settings(settings, user_id=None):
     """Save settings"""
@@ -425,7 +425,7 @@ def db_save_settings(settings, user_id=None):
             currency = EXCLUDED.currency,
             dark_mode = EXCLUDED.dark_mode,
             updated_at = CURRENT_TIMESTAMP
-    """, (user_id, settings.get('currency', '$'), settings.get('dark_mode', True)))
+    """, (user_id, settings.get('currency', '$'), settings.get('dark_mode', False)))
 
 # Initialize database on module import
 try:
