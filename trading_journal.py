@@ -6,6 +6,13 @@ from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import calendar as cal
 
+# Import analytics module
+try:
+    from analytics import get_complete_analysis, generate_ai_insights
+    ANALYTICS_AVAILABLE = True
+except Exception as e:
+    ANALYTICS_AVAILABLE = False
+
 # Import data layer (handles Database or JSON fallback)
 try:
     from data_layer import (
@@ -67,8 +74,8 @@ def save_users(users):
     if DATA_LAYER_AVAILABLE:
         dl_save_users(users)
     else:
-        with open(USERS_FILE, 'w') as f:
-            json.dump(users, f, indent=2)
+    with open(USERS_FILE, 'w') as f:
+        json.dump(users, f, indent=2)
 
 def authenticate_user(username, password):
     """Authenticate user and return user object if valid"""
@@ -434,8 +441,8 @@ def save_settings(settings):
     if DATA_LAYER_AVAILABLE:
         dl_save_settings(settings)
     else:
-        with open(SETTINGS_FILE, 'w') as f:
-            json.dump(settings, f, indent=2)
+    with open(SETTINGS_FILE, 'w') as f:
+        json.dump(settings, f, indent=2)
 
 # ===== MISTAKES MANAGEMENT =====
 
@@ -666,8 +673,8 @@ def save_accounts(accounts):
     if DATA_LAYER_AVAILABLE:
         dl_save_accounts(accounts)
     else:
-        with open(ACCOUNTS_FILE, 'w') as f:
-            json.dump(accounts, f, indent=2)
+    with open(ACCOUNTS_FILE, 'w') as f:
+        json.dump(accounts, f, indent=2)
 
 def load_trades(user_id=None):
     """Load trades - Uses Database or JSON fallback"""
@@ -723,8 +730,8 @@ def save_trades(trades):
     if DATA_LAYER_AVAILABLE:
         dl_save_trades(trades)
     else:
-        with open(TRADES_FILE, 'w') as f:
-            json.dump(trades, f, indent=2)
+    with open(TRADES_FILE, 'w') as f:
+        json.dump(trades, f, indent=2)
 
 def delete_trade(trade_id):
     """Delete a specific trade by ID"""
@@ -1415,6 +1422,7 @@ with st.sidebar:
         "📅 Calendar",
         "💰 Per Symbol",
         "🧠 Psychology",
+        "🔬 Advanced Analytics",
         "📔 Daily Journal",
         "🎬 Trade Replay",
         "👨‍🏫 Mentor Mode",
@@ -3485,6 +3493,153 @@ if trades:
             
         else:
             st.warning("⚠️ No psychological data available. Add trades with the new fields!")
+    
+    # PAGE: Advanced Analytics
+    if selected_page == "🔬 Advanced Analytics":
+        st.header("🔬 Advanced Analytics & AI Insights")
+        
+        if not ANALYTICS_AVAILABLE:
+            st.error("❌ Analytics module not available")
+        elif len(trades) < 10:
+            st.warning("📊 Add at least 10 trades to unlock Advanced Analytics insights")
+        else:
+            st.success(f"✅ Analyzing {len(trades)} trades with AI-powered insights...")
+            
+            # Get complete analysis
+            analysis = get_complete_analysis(trades)
+            
+            # === AI INSIGHTS ===
+            st.subheader("🤖 AI-Powered Insights")
+            insights = analysis['ai_insights']
+            
+            for i, insight in enumerate(insights, 1):
+                if insight.startswith("🧠"):
+                    st.info(insight)
+                elif insight.startswith("⚠️") or insight.startswith("🛑"):
+                    st.warning(insight)
+                elif insight.startswith("✅"):
+                    st.success(insight)
+                else:
+                    st.write(f"{i}. {insight}")
+            
+            st.divider()
+            
+            # === PSYCHOLOGY CORRELATIONS ===
+            if analysis['psychology']:
+                st.subheader("🧠 Psychology Performance Analysis")
+                psych = analysis['psychology']
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    # Mood Analysis
+                    if psych['mood_analysis']:
+                        st.metric("Best Mood", psych['mood_analysis']['best_mood'], 
+                                 f"€{psych['mood_analysis']['best_mood_avg_pnl']:.2f} avg")
+                        st.metric("Worst Mood", psych['mood_analysis']['worst_mood'],
+                                 f"€{psych['mood_analysis']['worst_mood_avg_pnl']:.2f} avg")
+                    
+                    # Focus Analysis
+                    if psych['focus_analysis']:
+                        st.metric("Focus Impact", 
+                                 f"€{psych['focus_analysis']['difference']:.2f}",
+                                 f"Correlation: {psych['focus_analysis']['correlation']:.2f}")
+                
+                with col2:
+                    # Stress Analysis
+                    if psych['stress_analysis']:
+                        st.metric("Stress Impact (Lower is Better)", 
+                                 f"€{psych['stress_analysis']['difference']:.2f}",
+                                 f"Correlation: {psych['stress_analysis']['correlation']:.2f}")
+                    
+                    # Sleep Analysis
+                    if psych['sleep_analysis']:
+                        st.metric("Sleep Impact", 
+                                 f"€{psych['sleep_analysis']['difference']:.2f}",
+                                 f"Correlation: {psych['sleep_analysis']['correlation']:.2f}")
+                
+                st.divider()
+            
+            # === TIME PATTERNS ===
+            if analysis['time_patterns']:
+                st.subheader("⏰ Time-Based Performance Patterns")
+                time_pat = analysis['time_patterns']
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    if time_pat['day_analysis']:
+                        st.write("**📅 Best/Worst Trading Days:**")
+                        st.metric("Best Day", time_pat['day_analysis']['best_day'],
+                                 f"€{time_pat['day_analysis']['best_day_avg']:.2f} avg")
+                        st.metric("Worst Day", time_pat['day_analysis']['worst_day'],
+                                 f"€{time_pat['day_analysis']['worst_day_avg']:.2f} avg")
+                
+                with col2:
+                    if time_pat['hour_analysis'] and time_pat['hour_analysis']['best_hours']:
+                        st.write("**🕐 Best Trading Hours:**")
+                        best_hours = time_pat['hour_analysis']['best_hours'][:3]
+                        st.write(f"✅ {', '.join([f'{h}:00' for h in best_hours])}")
+                        
+                        st.write("**⚠️ Worst Trading Hours:**")
+                        worst_hours = time_pat['hour_analysis']['worst_hours'][:3]
+                        st.write(f"❌ {', '.join([f'{h}:00' for h in worst_hours])}")
+                
+                st.divider()
+            
+            # === SETUP & SYMBOL ANALYSIS ===
+            if analysis['setups_symbols']:
+                st.subheader("📊 Setup & Symbol Performance")
+                setup_sym = analysis['setups_symbols']
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    if setup_sym['setup_analysis']:
+                        st.write("**🎯 Best Setup:**")
+                        st.metric(setup_sym['setup_analysis']['best_setup'],
+                                 f"€{setup_sym['setup_analysis']['best_setup_avg']:.2f} avg",
+                                 f"{setup_sym['setup_analysis']['best_setup_winrate']:.1f}% WR")
+                        
+                        st.write("**❌ Worst Setup:**")
+                        st.metric(setup_sym['setup_analysis']['worst_setup'],
+                                 f"€{setup_sym['setup_analysis']['worst_setup_avg']:.2f} avg")
+                
+                with col2:
+                    if setup_sym['symbol_analysis']:
+                        st.write("**💰 Best Symbol:**")
+                        st.metric(setup_sym['symbol_analysis']['best_symbol'],
+                                 f"€{setup_sym['symbol_analysis']['best_symbol_avg']:.2f} avg",
+                                 f"{setup_sym['symbol_analysis']['best_symbol_winrate']:.1f}% WR")
+                        
+                        st.write("**⚠️ Worst Symbol:**")
+                        st.metric(setup_sym['symbol_analysis']['worst_symbol'],
+                                 f"€{setup_sym['symbol_analysis']['worst_symbol_avg']:.2f} avg",
+                                 f"{setup_sym['symbol_analysis']['worst_symbol_winrate']:.1f}% WR")
+            
+            st.divider()
+            
+            # === DETAILED STATS TABLES ===
+            with st.expander("📋 Detailed Statistics Tables", expanded=False):
+                tab1, tab2, tab3 = st.tabs(["Psychology", "Time Patterns", "Setups & Symbols"])
+                
+                with tab1:
+                    if analysis['psychology']:
+                        st.write("**Mood Statistics:**")
+                        if analysis['psychology']['mood_analysis']:
+                            st.json(analysis['psychology']['mood_analysis'])
+                
+                with tab2:
+                    if analysis['time_patterns']:
+                        st.write("**Day Statistics:**")
+                        if analysis['time_patterns']['day_analysis']:
+                            st.json(analysis['time_patterns']['day_analysis'])
+                
+                with tab3:
+                    if analysis['setups_symbols']:
+                        st.write("**Setup Statistics:**")
+                        if analysis['setups_symbols']['setup_analysis']:
+                            st.json(analysis['setups_symbols']['setup_analysis'])
     
     # PAGE: Daily Journal
     if selected_page == "📔 Daily Journal":
