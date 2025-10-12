@@ -1040,14 +1040,15 @@ active_quotes = [q for q in quotes if q.get('active', True)]
 if active_quotes:
     import time
     
-    # Initialize quote index and last rotation time
+    # Initialize quote index and last rotation time if not present
     if 'current_quote_idx' not in st.session_state:
         st.session_state['current_quote_idx'] = 0
+    if 'last_quote_rotation' not in st.session_state:
         st.session_state['last_quote_rotation'] = time.time()
     
     # Check if 30 seconds have passed since last rotation
     current_time = time.time()
-    time_elapsed = current_time - st.session_state['last_quote_rotation']
+    time_elapsed = current_time - st.session_state.get('last_quote_rotation', current_time)
     
     if time_elapsed >= 30:  # 30 seconds
         # Rotate to next quote
