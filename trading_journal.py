@@ -65,6 +65,13 @@ try:
 except Exception as e:
     MOBILE_PWA_AVAILABLE = False
 
+# Import Broker Integration module
+try:
+    from broker_integration import setup_tradingview_webhook, get_webhook_instructions, process_webhook_trade, get_integration_status, test_webhook_connection
+    BROKER_INTEGRATION_AVAILABLE = True
+except Exception as e:
+    BROKER_INTEGRATION_AVAILABLE = False
+
 # Import alerts module
 try:
     from alerts import check_all_alerts, get_alert_summary, DEFAULT_THRESHOLDS
@@ -1555,6 +1562,7 @@ with st.sidebar:
         "🔬 Advanced Analytics",
         "🤖 AI Assistant",
         "📱 Mobile PWA",
+        "🔗 Broker Integration",
         "🎯 Risk Calculator",
         "📔 Daily Journal",
         "🎬 Trade Replay",
@@ -4493,6 +4501,410 @@ if trades:
                                     st.write(f":{color}[€{pnl:.2f}]")
                 else:
                     st.info("Add some trades to see mobile stats!")
+    
+    # PAGE: Broker Integration
+    if selected_page == "🔗 Broker Integration":
+        st.header("🔗 Broker Integration & TradingView Webhooks")
+        st.info("💡 Connect your TradingView alerts to automatically log trades")
+        
+        if not BROKER_INTEGRATION_AVAILABLE:
+            st.error("❌ Broker Integration module not available")
+        else:
+            st.success("✅ Broker Integration ready!")
+            
+            # Create tabs for different integration features
+            tab1, tab2, tab3, tab4 = st.tabs(["📊 TradingView Setup", "🔗 Webhook Management", "📈 Test Integration", "📋 Integration Status"])
+            
+            with tab1:
+                st.subheader("📊 TradingView Webhook Setup")
+                st.write("Connect your TradingView alerts to automatically create trades in your journal")
+                
+                # Setup TradingView Integration
+                st.markdown("### 🚀 Setup TradingView Integration")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown("""
+                    **📈 TradingView Benefits:**
+                    - ⚡ Automatic trade logging
+                    - 🎯 Real-time alerts
+                    - 📊 Strategy integration
+                    - 🔄 No manual entry needed
+                    - 📱 Works with any device
+                    """)
+                
+                with col2:
+                    st.markdown("""
+                    **🔧 How It Works:**
+                    1. Create webhook URL
+                    2. Setup TradingView alert
+                    3. Configure message format
+                    4. Trades auto-logged
+                    5. Review in journal
+                    """)
+                
+                # Integration Settings
+                st.subheader("⚙️ Integration Settings")
+                
+                with st.form("tradingview_setup"):
+                    st.markdown("### 🔧 Configure Integration")
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        auto_create_trades = st.checkbox(
+                            "Auto-create trades",
+                            value=True,
+                            help="Automatically create trades from webhooks"
+                        )
+                        
+                        default_quantity = st.number_input(
+                            "Default quantity",
+                            min_value=0.01,
+                            value=1.0,
+                            step=0.01,
+                            help="Default position size for trades"
+                        )
+                    
+                    with col2:
+                        risk_per_trade = st.number_input(
+                            "Risk per trade (%)",
+                            min_value=0.1,
+                            max_value=10.0,
+                            value=1.0,
+                            step=0.1,
+                            help="Risk percentage per trade"
+                        )
+                        
+                        notification_enabled = st.checkbox(
+                            "Enable notifications",
+                            value=True,
+                            help="Get notified when trades are created"
+                        )
+                    
+                    # Symbol mapping
+                    st.markdown("### 🎯 Symbol Mapping")
+                    st.write("Map TradingView symbols to your preferred format")
+                    
+                    symbol_mapping = {}
+                    symbols = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD', 'NZDUSD', 'EURJPY', 'GBPJPY']
+                    
+                    for symbol in symbols:
+                        col1, col2 = st.columns([2, 1])
+                        with col1:
+                            st.write(symbol)
+                        with col2:
+                            mapped_symbol = st.text_input(
+                                f"Map {symbol}",
+                                value=symbol,
+                                key=f"symbol_{symbol}",
+                                help=f"TradingView symbol for {symbol}"
+                            )
+                            symbol_mapping[symbol] = mapped_symbol
+                    
+                    submitted = st.form_submit_button("🔗 Setup TradingView Integration", type="primary", use_container_width=True)
+                    
+                    if submitted:
+                        settings = {
+                            'auto_create_trades': auto_create_trades,
+                            'default_quantity': default_quantity,
+                            'risk_per_trade': risk_per_trade / 100,
+                            'notification_enabled': notification_enabled,
+                            'symbol_mapping': symbol_mapping
+                        }
+                        
+                        # Setup integration
+                        webhook_config = setup_tradingview_webhook(
+                            current_user['id'], 
+                            selected_account.get('id', 1), 
+                            settings
+                        )
+                        
+                        st.success("✅ TradingView integration setup complete!")
+                        st.session_state['webhook_config'] = webhook_config
+                        st.rerun()
+            
+            with tab2:
+                st.subheader("🔗 Webhook Management")
+                st.write("Manage your TradingView webhook URLs and configurations")
+                
+                # Check if webhook is configured
+                if 'webhook_config' in st.session_state:
+                    webhook_config = st.session_state['webhook_config']
+                    
+                    # Display webhook info
+                    st.markdown("### 📋 Current Webhook Configuration")
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.metric("Webhook ID", webhook_config['webhook_id'])
+                        st.metric("Status", "🟢 Active" if webhook_config['active'] else "🔴 Inactive")
+                    
+                    with col2:
+                        st.metric("Usage Count", webhook_config['usage_count'])
+                        st.metric("Created", webhook_config['created_at'][:10])
+                    
+                    # Webhook URL
+                    st.markdown("### 🔗 Webhook URL")
+                    st.code(webhook_config['webhook_url'], language="text")
+                    
+                    # Copy button
+                    if st.button("📋 Copy Webhook URL", use_container_width=True):
+                        st.success("✅ Webhook URL copied to clipboard!")
+                    
+                    # Get instructions
+                    st.subheader("📖 Setup Instructions")
+                    
+                    instructions = get_webhook_instructions(webhook_config)
+                    
+                    st.markdown("### 📊 TradingView Alert Setup")
+                    
+                    for step in instructions['setup_steps']:
+                        st.write(step)
+                    
+                    st.markdown("### 📝 Message Format")
+                    st.code(json.dumps(instructions['example_message'], indent=2), language="json")
+                    
+                    st.markdown("### ✅ Supported Actions")
+                    st.write(", ".join(instructions['supported_actions']))
+                    
+                    st.markdown("### 🎯 Supported Symbols")
+                    st.write(", ".join(instructions['supported_symbols']))
+                    
+                else:
+                    st.warning("⚠️ No webhook configured. Please setup TradingView integration first.")
+                    
+                    if st.button("🔧 Setup Integration", type="primary"):
+                        st.session_state['current_page'] = "🔗 Broker Integration"
+                        st.rerun()
+            
+            with tab3:
+                st.subheader("📈 Test Integration")
+                st.write("Test your webhook connection and message format")
+                
+                if 'webhook_config' in st.session_state:
+                    webhook_config = st.session_state['webhook_config']
+                    
+                    # Test webhook connection
+                    st.markdown("### 🧪 Test Webhook Connection")
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        if st.button("🔗 Test Connection", type="primary", use_container_width=True):
+                            with st.spinner("Testing webhook connection..."):
+                                result = test_webhook_connection(webhook_config['webhook_url'])
+                                
+                                if result['success']:
+                                    st.success("✅ Webhook connection successful!")
+                                    st.json(result)
+                                else:
+                                    st.error(f"❌ Connection failed: {result.get('error', 'Unknown error')}")
+                    
+                    with col2:
+                        st.metric("Webhook URL", webhook_config['webhook_url'][:50] + "...")
+                    
+                    # Test message format
+                    st.markdown("### 📝 Test Message Format")
+                    
+                    with st.form("test_message"):
+                        st.markdown("### 🎯 Create Test Trade")
+                        
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            test_symbol = st.selectbox(
+                                "Symbol",
+                                ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'],
+                                help="Test symbol"
+                            )
+                            
+                            test_action = st.selectbox(
+                                "Action",
+                                ['BUY', 'SELL', 'LONG', 'SHORT'],
+                                help="Test action"
+                            )
+                        
+                        with col2:
+                            test_price = st.number_input(
+                                "Price",
+                                min_value=0.0,
+                                value=1.0850,
+                                step=0.0001,
+                                format="%.4f",
+                                help="Test price"
+                            )
+                            
+                            test_quantity = st.number_input(
+                                "Quantity",
+                                min_value=0.01,
+                                value=1.0,
+                                step=0.01,
+                                help="Test quantity"
+                            )
+                        
+                        test_message = st.text_area(
+                            "Test Message",
+                            value="Test trade from TradingView webhook",
+                            help="Test message"
+                        )
+                        
+                        submitted = st.form_submit_button("📤 Send Test Message", type="primary", use_container_width=True)
+                        
+                        if submitted:
+                            # Create test data
+                            test_data = {
+                                'symbol': test_symbol,
+                                'action': test_action,
+                                'price': test_price,
+                                'quantity': test_quantity,
+                                'strategy': 'Test Strategy',
+                                'message': test_message,
+                                'timeframe': '5m',
+                                'timestamp': datetime.now().isoformat()
+                            }
+                            
+                            # Process test trade
+                            result = process_webhook_trade(
+                                test_data, 
+                                current_user['id'], 
+                                selected_account.get('id', 1)
+                            )
+                            
+                            if result['success']:
+                                st.success(f"✅ Test trade created: {result['message']}")
+                                
+                                # Add to trades
+                                trades.append(result['trade'])
+                                save_trades(trades)
+                                
+                                st.balloons()
+                                st.rerun()
+                            else:
+                                st.error(f"❌ Test failed: {result['error']}")
+                    
+                    # Webhook logs
+                    st.markdown("### 📊 Webhook Activity")
+                    
+                    # Show recent webhook activity
+                    recent_trades = [t for t in trades if t.get('influence') == 'TradingView']
+                    
+                    if recent_trades:
+                        st.write(f"**Recent TradingView trades: {len(recent_trades)}**")
+                        
+                        for trade in recent_trades[-5:]:  # Show last 5
+                            col1, col2, col3 = st.columns([2, 1, 1])
+                            
+                            with col1:
+                                st.write(f"{trade['symbol']} {trade['side']} @ {trade['entry_price']}")
+                            
+                            with col2:
+                                st.write(trade['date'])
+                            
+                            with col3:
+                                st.write(trade['time'])
+                    else:
+                        st.info("No TradingView trades yet. Send a test message to see activity.")
+                
+                else:
+                    st.warning("⚠️ No webhook configured. Please setup TradingView integration first.")
+            
+            with tab4:
+                st.subheader("📋 Integration Status")
+                st.write("Monitor your broker integration status and activity")
+                
+                # Get integration status
+                integration_status = get_integration_status(
+                    current_user['id'], 
+                    selected_account.get('id', 1)
+                )
+                
+                if integration_status['enabled']:
+                    st.success("✅ TradingView integration is active")
+                    
+                    # Status metrics
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    with col1:
+                        st.metric("Status", "🟢 Active")
+                    
+                    with col2:
+                        st.metric("Total Trades", integration_status['total_trades'])
+                    
+                    with col3:
+                        last_activity = integration_status['last_activity']
+                        if last_activity:
+                            st.metric("Last Activity", last_activity[:10])
+                        else:
+                            st.metric("Last Activity", "Never")
+                    
+                    with col4:
+                        created_at = integration_status['created_at']
+                        st.metric("Created", created_at[:10])
+                    
+                    # Settings overview
+                    st.markdown("### ⚙️ Current Settings")
+                    
+                    settings = integration_status['settings']
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.write(f"**Auto-create trades:** {'✅' if settings['auto_create_trades'] else '❌'}")
+                        st.write(f"**Default quantity:** {settings['default_quantity']}")
+                    
+                    with col2:
+                        st.write(f"**Risk per trade:** {settings['risk_per_trade']*100:.1f}%")
+                        st.write(f"**Notifications:** {'✅' if settings['notification_enabled'] else '❌'}")
+                    
+                    # Symbol mapping
+                    st.markdown("### 🎯 Symbol Mapping")
+                    
+                    symbol_mapping = settings['symbol_mapping']
+                    if symbol_mapping:
+                        mapping_df = pd.DataFrame([
+                            {'TradingView': k, 'Journal': v} 
+                            for k, v in symbol_mapping.items()
+                        ])
+                        st.dataframe(mapping_df, use_container_width=True)
+                    
+                    # Webhook URL
+                    st.markdown("### 🔗 Webhook URL")
+                    st.code(integration_status['webhook_url'], language="text")
+                    
+                    # Activity chart
+                    if integration_status['total_trades'] > 0:
+                        st.markdown("### 📈 Integration Activity")
+                        
+                        # Show trades created via webhook
+                        webhook_trades = [t for t in trades if t.get('influence') == 'TradingView']
+                        
+                        if webhook_trades:
+                            # Create activity chart
+                            df = pd.DataFrame(webhook_trades)
+                            df['date'] = pd.to_datetime(df['date'])
+                            daily_counts = df.groupby('date').size().reset_index(name='trades')
+                            
+                            st.line_chart(
+                                daily_counts.set_index('date')['trades'],
+                                height=300
+                            )
+                    
+                else:
+                    st.warning("⚠️ TradingView integration not set up")
+                    
+                    st.markdown("### 🚀 Get Started")
+                    st.write("1. Go to 'TradingView Setup' tab")
+                    st.write("2. Configure your integration settings")
+                    st.write("3. Copy the webhook URL")
+                    st.write("4. Setup TradingView alerts")
+                    st.write("5. Start receiving automatic trades!")
+                    
+                    if st.button("🔧 Setup Integration", type="primary"):
+                        st.session_state['current_page'] = "🔗 Broker Integration"
+                        st.rerun()
     
     # PAGE: Risk Calculator
     if selected_page == "🎯 Risk Calculator":
