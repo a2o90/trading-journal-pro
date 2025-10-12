@@ -942,16 +942,54 @@ def calculate_metrics(df):
             'max_drawdown_pct': 0
         }
     
-    total_profit = df['pnl'].sum()
-    winning_trades = len(df[df['pnl'] > 0])
-    losing_trades = len(df[df['pnl'] < 0])
-    total_trades = len(df)
+    # Ensure pnl column exists and is numeric
+    if 'pnl' not in df.columns:
+        return {
+            'total_profit': 0,
+            'win_rate': 0,
+            'Expectancy': 0,
+            'total_trades': 0,
+            'winning_trades': 0,
+            'losing_trades': 0,
+            'avg_win': 0,
+            'avg_loss': 0,
+            'profit_factor': 0,
+            'sharpe_ratio': 0,
+            'max_drawdown': 0,
+            'max_drawdown_pct': 0
+        }
+    
+    # Convert pnl to numeric and remove any non-numeric values
+    df_clean = df.copy()
+    df_clean['pnl'] = pd.to_numeric(df_clean['pnl'], errors='coerce')
+    df_clean = df_clean.dropna(subset=['pnl'])
+    
+    if len(df_clean) == 0:
+        return {
+            'total_profit': 0,
+            'win_rate': 0,
+            'Expectancy': 0,
+            'total_trades': 0,
+            'winning_trades': 0,
+            'losing_trades': 0,
+            'avg_win': 0,
+            'avg_loss': 0,
+            'profit_factor': 0,
+            'sharpe_ratio': 0,
+            'max_drawdown': 0,
+            'max_drawdown_pct': 0
+        }
+    
+    total_profit = df_clean['pnl'].sum()
+    winning_trades = len(df_clean[df_clean['pnl'] > 0])
+    losing_trades = len(df_clean[df_clean['pnl'] < 0])
+    total_trades = len(df_clean)
     
     win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
     
     # Calculate Expectancy
-    avg_win = df[df['pnl'] > 0]['pnl'].mean() if winning_trades > 0 else 0
-    avg_loss = abs(df[df['pnl'] < 0]['pnl'].mean()) if losing_trades > 0 else 0
+    avg_win = df_clean[df_clean['pnl'] > 0]['pnl'].mean() if winning_trades > 0 else 0
+    avg_loss = abs(df_clean[df_clean['pnl'] < 0]['pnl'].mean()) if losing_trades > 0 else 0
     
     if total_trades > 0:
         Expectancy = (win_rate/100 * avg_win) - ((1 - win_rate/100) * avg_loss)
@@ -959,27 +997,39 @@ def calculate_metrics(df):
         Expectancy = 0
     
     # Calculate Profit Factor
-    gross_profit = df[df['pnl'] > 0]['pnl'].sum() if winning_trades > 0 else 0
-    gross_loss = abs(df[df['pnl'] < 0]['pnl'].sum()) if losing_trades > 0 else 0
+    gross_profit = df_clean[df_clean['pnl'] > 0]['pnl'].sum() if winning_trades > 0 else 0
+    gross_loss = abs(df_clean[df_clean['pnl'] < 0]['pnl'].sum()) if losing_trades > 0 else 0
     profit_factor = (gross_profit / gross_loss) if gross_loss > 0 else 0
     
-    # Calculate Sharpe Ratio (assuming daily returns)
-    if len(df) > 1:
-        returns = df['pnl']
-        sharpe_ratio = (returns.mean() / returns.std()) * (252 ** 0.5) if returns.std() > 0 else 0
+    # Calculate Sharpe Ratio (assuming daily returns) - with safe std calculation
+    if len(df_clean) > 1:
+        returns = df_clean['pnl']
+        try:
+            returns_mean = returns.mean()
+            returns_std = returns.std()
+            if pd.notna(returns_std) and returns_std > 0:
+                sharpe_ratio = (returns_mean / returns_std) * (252 ** 0.5)
+            else:
+                sharpe_ratio = 0
+        except Exception:
+            sharpe_ratio = 0
     else:
         sharpe_ratio = 0
     
-    # Calculate Max Drawdown
-    df_sorted = df.sort_values('date')
-    cumulative = df_sorted['pnl'].cumsum()
-    running_max = cumulative.cummax()
-    drawdown = cumulative - running_max
-    max_drawdown = abs(drawdown.min()) if len(drawdown) > 0 else 0
-    
-    # Max Drawdown Percentage
-    peak = running_max.max()
-    max_drawdown_pct = (max_drawdown / peak * 100) if peak > 0 else 0
+    # Calculate Max Drawdown - using clean data
+    try:
+        df_sorted = df_clean.sort_values('date')
+        cumulative = df_sorted['pnl'].cumsum()
+        running_max = cumulative.cummax()
+        drawdown = cumulative - running_max
+        max_drawdown = abs(drawdown.min()) if len(drawdown) > 0 else 0
+        
+        # Max Drawdown Percentage
+        peak = running_max.max()
+        max_drawdown_pct = (max_drawdown / peak * 100) if peak > 0 else 0
+    except Exception:
+        max_drawdown = 0
+        max_drawdown_pct = 0
     
     return {
         'total_profit': total_profit,
