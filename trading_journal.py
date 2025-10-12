@@ -458,8 +458,8 @@ def save_settings(settings):
     if DATA_LAYER_AVAILABLE:
         dl_save_settings(settings)
     else:
-    with open(SETTINGS_FILE, 'w') as f:
-        json.dump(settings, f, indent=2)
+        with open(SETTINGS_FILE, 'w') as f:
+            json.dump(settings, f, indent=2)
 
 # ===== MISTAKES MANAGEMENT =====
 
@@ -690,8 +690,8 @@ def save_accounts(accounts):
     if DATA_LAYER_AVAILABLE:
         dl_save_accounts(accounts)
     else:
-    with open(ACCOUNTS_FILE, 'w') as f:
-        json.dump(accounts, f, indent=2)
+        with open(ACCOUNTS_FILE, 'w') as f:
+            json.dump(accounts, f, indent=2)
 
 def load_trades(user_id=None):
     """Load trades - Uses Database or JSON fallback"""
@@ -747,8 +747,8 @@ def save_trades(trades):
     if DATA_LAYER_AVAILABLE:
         dl_save_trades(trades)
     else:
-    with open(TRADES_FILE, 'w') as f:
-        json.dump(trades, f, indent=2)
+        with open(TRADES_FILE, 'w') as f:
+            json.dump(trades, f, indent=2)
 
 def delete_trade(trade_id):
     """Delete a specific trade by ID"""
