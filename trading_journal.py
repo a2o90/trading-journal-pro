@@ -1034,13 +1034,26 @@ with header_col3:
 
 st.write("")
 
-# ===== QUOTES SLIDER =====
+# ===== QUOTES SLIDER WITH AUTO-ROTATION =====
 quotes = load_quotes()
 active_quotes = [q for q in quotes if q.get('active', True)]
 if active_quotes:
-    import random
+    import time
+    
+    # Initialize quote index and last rotation time
     if 'current_quote_idx' not in st.session_state:
         st.session_state['current_quote_idx'] = 0
+        st.session_state['last_quote_rotation'] = time.time()
+    
+    # Check if 30 seconds have passed since last rotation
+    current_time = time.time()
+    time_elapsed = current_time - st.session_state['last_quote_rotation']
+    
+    if time_elapsed >= 30:  # 30 seconds
+        # Rotate to next quote
+        st.session_state['current_quote_idx'] = (st.session_state['current_quote_idx'] + 1) % len(active_quotes)
+        st.session_state['last_quote_rotation'] = current_time
+        st.rerun()
     
     # Get current quote
     quote_idx = st.session_state['current_quote_idx'] % len(active_quotes)
@@ -1082,8 +1095,17 @@ if active_quotes:
     </div>
     """, unsafe_allow_html=True)
     
-    # Auto-rotate quotes every 10 seconds (simulate with rerun - but we'll just rotate on page reload)
-    # For a real auto-rotate, you'd need st.rerun() with time.sleep or use st_autorefresh component
+    # Schedule next rotation using Streamlit's experimental fragment feature
+    # This ensures the page auto-refreshes after 30 seconds
+    time_remaining = 30 - time_elapsed
+    if time_remaining > 0:
+        st.markdown(f"""
+        <script>
+            setTimeout(function() {{
+                window.location.reload();
+            }}, {int(time_remaining * 1000)});
+        </script>
+        """, unsafe_allow_html=True)
 
 # ===== 15-MINUTE MINDSET CHECK-IN SYSTEM =====
 # Initialize check-in state
@@ -1656,15 +1678,44 @@ with st.sidebar:
     st.divider()
     st.header("📊 Filters")
 
-# Create tabs
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.tabs([
-    "📝 Add Trade", "📊 All Trades", "📅 Calendar", "💰 Per Symbol", 
-    "🧠 Psychology", "📔 Daily Journal", "🎬 Trade Replay", "👨‍🏫 Mentor Mode",
-    "❌ Mistakes", "🛡️ Avoided Trades", "📋 Pre-Trade Plan", "💬 Admin Quotes"
-])
+# ==== NAVIGATION MENU (Sidebar) ====
+with st.sidebar:
+    st.markdown("---")
+    st.header("📍 Navigation")
+    
+    # Create navigation categories
+    nav_options = [
+        "📝 Add Trade",
+        "📊 All Trades", 
+        "📅 Calendar",
+        "💰 Per Symbol",
+        "🧠 Psychology",
+        "📔 Daily Journal",
+        "🎬 Trade Replay",
+        "👨‍🏫 Mentor Mode",
+        "❌ Mistakes",
+        "🛡️ Avoided Trades",
+        "📋 Pre-Trade Plan",
+        "💬 Admin Quotes"
+    ]
+    
+    # Initialize session state for navigation
+    if 'current_page' not in st.session_state:
+        st.session_state['current_page'] = "📝 Add Trade"
+    
+    # Navigation menu
+    selected_page = st.radio(
+        "Select Page:",
+        nav_options,
+        index=nav_options.index(st.session_state['current_page']),
+        key="nav_radio"
+    )
+    
+    # Update current page
+    st.session_state['current_page'] = selected_page
 
-# TAB 1: Add New Trade
-with tab1:
+# PAGE 1: Add New Trade
+if selected_page == "📝 Add Trade":
     st.header("Add New Trade")
     
     if is_mentor_mode:
@@ -1806,8 +1857,8 @@ with tab1:
                 else:
                     st.error("⚠️ Fill in all required fields (Symbol, Entry Price, Exit Price)")
 
-# TAB 9: Mistakes Tracking
-with tab9:
+# PAGE: Mistakes Tracking
+if selected_page == "❌ Mistakes":
     st.header("❌ Mistakes Tracker")
     st.markdown("Track en analyseer je trading mistakes om te leren en verbeteren.")
     
@@ -1928,8 +1979,8 @@ with tab9:
                 else:
                     st.error("Vul een beschrijving in")
 
-# TAB 10: Avoided Trades
-with tab10:
+# PAGE: Avoided Trades
+if selected_page == "🛡️ Avoided Trades":
     st.header("🛡️ Avoided Trades Journal")
     st.markdown("Documenteer trades die je NIET hebt genomen - soms is niet traden de beste trade!")
     
@@ -2035,8 +2086,8 @@ with tab10:
                 else:
                     st.error("Vul minimaal een symbol in")
 
-# TAB 11: Pre-Trade Analysis
-with tab11:
+# PAGE: Pre-Trade Analysis
+if selected_page == "📋 Pre-Trade Plan":
     st.header("📋 Pre-Trade Planning")
     st.markdown("Plan je trades vooraf - voorbereiding is de sleutel tot succes!")
     
@@ -2161,8 +2212,8 @@ with tab11:
                 else:
                     st.error("Vul minimaal symbol en entry plan in")
 
-# TAB 12: Admin Quotes Management
-with tab12:
+# PAGE: Admin Quotes Management
+if selected_page == "💬 Admin Quotes":
     st.header("💬 Quotes Management")
     
     # Check if user is admin (by username or ID)
@@ -2281,9 +2332,9 @@ if trades:
     # Get unique symbols for filtering
     all_symbols = sorted(df['symbol'].unique().tolist())
     
-    # TAB 2: All trades
-    with tab2:
-        st.header("📊 All trades Overview")
+    # PAGE: All trades
+    if selected_page == "📊 All Trades":
+        st.header("📊 All Trades Overview")
         
         # Export options
         with st.expander("📥 Export Opties", expanded=False):
@@ -2727,8 +2778,8 @@ if trades:
                         st.success(f"Trade {row['id']} Deleted!")
                         st.rerun()
     
-    # TAB 3: Calendar View
-    with tab3:
+    # PAGE: Calendar View
+    if selected_page == "📅 Calendar":
         st.header("📅 Calendar Overview")
         
         col1, col2 = st.columns([1, 3])
@@ -2823,8 +2874,8 @@ if trades:
             else:
                 st.info("No trades in this month" + (f" for {', '.join(calendar_symbols)}" if calendar_symbols else ""))
     
-    # TAB 4: Per Symbol Analysis
-    with tab4:
+    # PAGE: Per Symbol Analysis
+    if selected_page == "💰 Per Symbol":
         st.header("💰 Analysis Per Symbol")
         
         col1, col2 = st.columns([3, 1])
@@ -2940,8 +2991,8 @@ if trades:
         else:
             st.info(f"No trades found for {selected_symbol}")
 
-    # TAB 5: Psychology Analysis
-    with tab5:
+    # PAGE: Psychology Analysis
+    if selected_page == "🧠 Psychology":
         st.header("🧠 Psychological Analysis")
         
         st.info("💡 Discover how your mental state affects your trading performance")
@@ -3312,8 +3363,8 @@ if trades:
         else:
             st.warning("⚠️ No psychological data available. Add trades with the new fields!")
     
-    # TAB 6: Daily Journal
-    with tab6:
+    # PAGE: Daily Journal
+    if selected_page == "📔 Daily Journal":
         st.header("📔 Daily Journal")
         st.info("💡 Write daily notes about your trading mindset, market observations, and lessons learned")
         
@@ -3390,8 +3441,8 @@ if trades:
         else:
             st.info("📝 No daily notes yet. Start journaling to track your trading journey!")
     
-    # TAB 7: Trade Replay
-    with tab7:
+    # PAGE: Trade Replay
+    if selected_page == "🎬 Trade Replay":
         st.header("🎬 Trade Replay")
         st.info("💡 Replay your trading journey chronologically and see how your strategy evolved")
         
@@ -3583,8 +3634,8 @@ if trades:
         else:
             st.info("🎬 Add some trades to use Trade Replay!")
     
-    # TAB 8: Mentor Mode
-    with tab8:
+    # PAGE: Mentor Mode
+    if selected_page == "👨‍🏫 Mentor Mode":
         st.header("👨‍🏫 Mentor Mode")
         st.info("💡 Share your journal with a mentor or coach for feedback and accountability")
         
