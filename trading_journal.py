@@ -91,8 +91,8 @@ def save_users(users):
     if DATA_LAYER_AVAILABLE:
         dl_save_users(users)
     else:
-    with open(USERS_FILE, 'w') as f:
-        json.dump(users, f, indent=2)
+        with open(USERS_FILE, 'w') as f:
+            json.dump(users, f, indent=2)
 
 def authenticate_user(username, password):
     """Authenticate user and return user object if valid"""
