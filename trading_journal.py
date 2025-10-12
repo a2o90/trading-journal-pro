@@ -218,15 +218,15 @@ def login_page():
     </style>
     <div class="privacy-disclaimer">
         <h4>⚠️ Privacy & Data Disclaimer</h4>
-        <p><strong>Let op:</strong> Als je deze Trading Journal gebruikt, moet je weten dat:</p>
+        <p><strong>Important:</strong> By using this Trading Journal, you acknowledge that:</p>
         <ul>
-            <li>🔍 De <strong>admin</strong> toegang heeft tot alle gebruikersdata, inclusief jouw trades en statistieken</li>
-            <li>👨‍🏫 Je kunt via <strong>Mentor Mode</strong> je journal delen met coaches (read-only)</li>
-            <li>🔒 Je data wordt lokaal opgeslagen in JSON bestanden op de server</li>
-            <li>📊 Geen data wordt gedeeld met derden - alleen admin heeft inzage</li>
+            <li>🔍 The <strong>admin</strong> has access to all user data, including your trades and statistics</li>
+            <li>👨‍🏫 You can share your journal with coaches via <strong>Mentor Mode</strong> (read-only access)</li>
+            <li>🔒 Your data is stored locally in JSON files on the server</li>
+            <li>📊 No data is shared with third parties - only the admin has access</li>
         </ul>
         <p style='margin-top: 15px; font-size: 13px; opacity: 0.9;'>
-            Door in te loggen of te registreren ga je akkoord met deze voorwaarden.
+            By logging in or registering, you agree to these terms.
         </p>
     </div>
     """, unsafe_allow_html=True)
