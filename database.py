@@ -337,37 +337,51 @@ def db_load_trades(user_id=None):
     return trades
 
 def db_save_trades(trades):
-    """Save/update trades (bulk operation)"""
+    """Save/update trades (bulk operation) - Uses INSERT ON CONFLICT for upsert"""
     for trade in trades:
-        if 'id' in trade and trade['id'] is not None:
-            # Update existing (simplified - add all fields as needed)
-            execute_query("""
-                UPDATE trades SET
-                    symbol = %s, pnl = %s, notes = %s
-                WHERE id = %s
-            """, (trade.get('symbol'), trade.get('pnl'), trade.get('notes'), trade['id']))
-        else:
-            # Insert new
-            execute_query("""
-                INSERT INTO trades (
-                    user_id, account_id, account_name, date, time, symbol, side,
-                    entry_price, exit_price, quantity, duration_minutes, pnl, r_multiple,
-                    setup, influence, trade_type, market_condition, mood,
-                    focus_level, stress_level, sleep_quality, pre_trade_confidence, notes
-                ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-                )
-            """, (
-                trade.get('user_id'), trade.get('account_id'), trade.get('account_name'),
-                trade.get('date'), trade.get('time'), trade.get('symbol'), trade.get('side'),
-                trade.get('entry_price'), trade.get('exit_price'), trade.get('quantity'),
-                trade.get('duration_minutes'), trade.get('pnl'), trade.get('r_multiple'),
-                trade.get('setup'), trade.get('influence'), trade.get('trade_type'),
-                trade.get('market_condition'), trade.get('mood'), trade.get('focus_level'),
-                trade.get('stress_level'), trade.get('sleep_quality'),
-                trade.get('pre_trade_confidence'), trade.get('notes')
-            ))
+        # Use PostgreSQL's INSERT ... ON CONFLICT (upsert)
+        # This will insert if new, update if exists
+        execute_query("""
+            INSERT INTO trades (
+                id, user_id, account_id, account_name, date, time, symbol, side,
+                entry_price, exit_price, quantity, duration_minutes, pnl, r_multiple,
+                setup, influence, trade_type, market_condition, mood,
+                focus_level, stress_level, sleep_quality, pre_trade_confidence, notes
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s, %s, %s, %s
+            )
+            ON CONFLICT (id) DO UPDATE SET
+                symbol = EXCLUDED.symbol,
+                pnl = EXCLUDED.pnl,
+                notes = EXCLUDED.notes,
+                date = EXCLUDED.date,
+                time = EXCLUDED.time,
+                side = EXCLUDED.side,
+                entry_price = EXCLUDED.entry_price,
+                exit_price = EXCLUDED.exit_price,
+                quantity = EXCLUDED.quantity,
+                duration_minutes = EXCLUDED.duration_minutes,
+                r_multiple = EXCLUDED.r_multiple,
+                setup = EXCLUDED.setup,
+                influence = EXCLUDED.influence,
+                trade_type = EXCLUDED.trade_type,
+                market_condition = EXCLUDED.market_condition,
+                mood = EXCLUDED.mood,
+                focus_level = EXCLUDED.focus_level,
+                stress_level = EXCLUDED.stress_level,
+                sleep_quality = EXCLUDED.sleep_quality,
+                pre_trade_confidence = EXCLUDED.pre_trade_confidence
+        """, (
+            trade.get('id'), trade.get('user_id'), trade.get('account_id'), trade.get('account_name'),
+            trade.get('date'), trade.get('time'), trade.get('symbol'), trade.get('side'),
+            trade.get('entry_price'), trade.get('exit_price'), trade.get('quantity'),
+            trade.get('duration_minutes'), trade.get('pnl'), trade.get('r_multiple'),
+            trade.get('setup'), trade.get('influence'), trade.get('trade_type'),
+            trade.get('market_condition'), trade.get('mood'), trade.get('focus_level'),
+            trade.get('stress_level'), trade.get('sleep_quality'),
+            trade.get('pre_trade_confidence'), trade.get('notes')
+        ))
 
 def db_delete_trade(trade_id):
     """Delete a trade"""
