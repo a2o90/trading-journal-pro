@@ -20,6 +20,16 @@ try:
 except Exception as e:
     ALERTS_AVAILABLE = False
 
+# Import risk calculator module
+try:
+    from risk_calculator import (
+        calculate_position_size, calculate_risk_reward, calculate_kelly_criterion,
+        get_risk_management_report, calculate_profit_targets
+    )
+    RISK_CALC_AVAILABLE = True
+except Exception as e:
+    RISK_CALC_AVAILABLE = False
+
 # Import data layer (handles Database or JSON fallback)
 try:
     from data_layer import (
@@ -1455,6 +1465,7 @@ with st.sidebar:
         "💰 Per Symbol",
         "🧠 Psychology",
         "🔬 Advanced Analytics",
+        "🎯 Risk Calculator",
         "📔 Daily Journal",
         "🎬 Trade Replay",
         "👨‍🏫 Mentor Mode",
@@ -3672,6 +3683,250 @@ if trades:
                         st.write("**Setup Statistics:**")
                         if analysis['setups_symbols']['setup_analysis']:
                             st.json(analysis['setups_symbols']['setup_analysis'])
+    
+    # PAGE: Risk Calculator
+    if selected_page == "🎯 Risk Calculator":
+        st.header("🎯 Risk Calculator & Position Sizing")
+        
+        if not RISK_CALC_AVAILABLE:
+            st.error("❌ Risk Calculator module not available")
+        else:
+            st.info("💡 Calculate optimal position sizes and manage your trading risk")
+            
+            tab1, tab2, tab3 = st.tabs(["📐 Position Size Calculator", "📊 Risk Management Report", "🎓 Education"])
+            
+            with tab1:
+                st.subheader("📐 Position Size Calculator")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    calc_account_size = st.number_input("Account Size (€)", min_value=100.0, value=10000.0, step=100.0, key="calc_account")
+                    calc_risk_pct = st.slider("Risk per Trade (%)", min_value=0.1, max_value=5.0, value=1.0, step=0.1, key="calc_risk")
+                    calc_entry = st.number_input("Entry Price (€)", min_value=0.01, value=100.0, step=0.01, key="calc_entry")
+                
+                with col2:
+                    calc_stop = st.number_input("Stop Loss (€)", min_value=0.01, value=95.0, step=0.01, key="calc_stop")
+                    calc_take_profit = st.number_input("Take Profit (€)", min_value=0.01, value=110.0, step=0.01, key="calc_tp")
+                
+                if st.button("🧮 Calculate Position Size", type="primary", use_container_width=True):
+                    position = calculate_position_size(calc_account_size, calc_risk_pct, calc_entry, calc_stop)
+                    rr = calculate_risk_reward(calc_entry, calc_stop, calc_take_profit)
+                    
+                    if position:
+                        st.success("✅ Position Size Calculated!")
+                        
+                        col1, col2, col3, col4 = st.columns(4)
+                        with col1:
+                            st.metric("Shares/Contracts", f"{position['shares']:.2f}")
+                        with col2:
+                            st.metric("Position Value", f"€{position['position_value']:.2f}")
+                        with col3:
+                            st.metric("Risk Amount", f"€{position['risk_amount']:.2f}")
+                        with col4:
+                            st.metric("Leverage", f"{position['leverage']:.2f}x")
+                        
+                        st.divider()
+                        
+                        if rr:
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.subheader("📊 Risk/Reward Analysis")
+                                st.metric("R:R Ratio", f"{rr['ratio']:.2f}:1")
+                                st.metric("Risk (€)", f"{rr['risk']:.2f}")
+                                st.metric("Reward (€)", f"{rr['reward']:.2f}")
+                            
+                            with col2:
+                                st.subheader("💡 Recommendations")
+                                if rr['ratio'] >= 2:
+                                    st.success(f"✅ Excellent R:R ratio ({rr['ratio']:.1f}:1)")
+                                elif rr['ratio'] >= 1:
+                                    st.info(f"⚠️ Acceptable R:R ({rr['ratio']:.1f}:1) - Consider increasing target")
+                                else:
+                                    st.error(f"❌ Poor R:R ({rr['ratio']:.1f}:1) - Not recommended!")
+                                
+                                # Calculate required winrate
+                                from risk_calculator import calculate_required_winrate
+                                req_wr = calculate_required_winrate(rr['ratio'])
+                                if req_wr:
+                                    st.write(f"**Required Winrate:** {req_wr['required_winrate_pct']:.1f}%")
+                        
+                        # Profit targets
+                        st.subheader("🎯 Profit Targets (R-Multiples)")
+                        targets = calculate_profit_targets(calc_entry, position['risk_amount'])
+                        if targets:
+                            target_df = pd.DataFrame(targets)
+                            st.dataframe(target_df, use_container_width=True, hide_index=True)
+                    
+                    else:
+                        st.error("❌ Invalid inputs - check your values")
+            
+            with tab2:
+                st.subheader("📊 Risk Management Report")
+                
+                if len(trades) < 10:
+                    st.warning("📊 Add at least 10 trades to generate Risk Management Report")
+                else:
+                    # Calculate current balance
+                    account_size = 10000  # Default
+                    current_balance = account_size + sum(t['pnl'] for t in trades)
+                    
+                    report = get_risk_management_report(trades, account_size, current_balance)
+                    
+                    if report:
+                        # Account Overview
+                        st.subheader("💰 Account Overview")
+                        col1, col2, col3, col4 = st.columns(4)
+                        with col1:
+                            st.metric("Starting Balance", f"€{report['account_size']:.2f}")
+                        with col2:
+                            st.metric("Current Balance", f"€{report['current_balance']:.2f}")
+                        with col3:
+                            st.metric("Total P&L", f"€{report['total_pnl']:.2f}", 
+                                     delta=f"{report['roi_pct']:.1f}%")
+                        with col4:
+                            st.metric("Total Trades", report['total_trades'])
+                        
+                        st.divider()
+                        
+                        # Kelly Criterion
+                        if report['kelly_criterion']:
+                            st.subheader("📈 Kelly Criterion (Optimal Position Sizing)")
+                            kelly = report['kelly_criterion']
+                            
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.metric("Full Kelly", f"{kelly['kelly_pct']:.2f}%")
+                                st.metric("Half Kelly (Recommended)", f"{kelly['half_kelly_pct']:.2f}%")
+                                st.info(kelly['recommendation'])
+                            
+                            with col2:
+                                st.metric("Win Rate", f"{kelly['win_rate']:.1f}%")
+                                st.metric("Avg Win/Loss Ratio", f"{kelly['win_loss_ratio']:.2f}")
+                                st.metric("Avg Win", f"€{kelly['avg_win']:.2f}")
+                        
+                        st.divider()
+                        
+                        # Expectancy
+                        if report['expectancy']:
+                            st.subheader("🎯 Trading Expectancy")
+                            exp = report['expectancy']
+                            
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                st.metric("Expectancy", f"€{exp['expectancy']:.2f}")
+                            with col2:
+                                st.metric("Win Rate", f"{exp['win_pct']:.1f}%")
+                            with col3:
+                                st.metric("Trades Analyzed", exp['trades_analyzed'])
+                            
+                            if exp['expectancy'] > 0:
+                                st.success(f"✅ {exp['message']}")
+                            else:
+                                st.error("❌ Negative expectancy - review your strategy!")
+                        
+                        st.divider()
+                        
+                        # Risk of Ruin
+                        if report['risk_of_ruin']:
+                            st.subheader("⚠️ Risk of Ruin Analysis")
+                            ruin = report['risk_of_ruin']
+                            
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.metric("Risk of 50% Drawdown", f"{ruin['ruin_probability_pct']:.4f}%")
+                                st.metric("Trades to 50% Loss", ruin['trades_to_50pct_loss'])
+                            
+                            with col2:
+                                if ruin['ruin_probability_pct'] < 0.1:
+                                    st.success("✅ Very low risk of ruin")
+                                elif ruin['ruin_probability_pct'] < 1:
+                                    st.info("⚠️ Acceptable risk level")
+                                else:
+                                    st.error("❌ High risk of ruin - reduce position size!")
+                                st.caption(ruin['warning'])
+                        
+                        st.divider()
+                        
+                        # Recommendations
+                        st.subheader("💡 Recommendations")
+                        for rec in report['recommendations']:
+                            if "✅" in rec:
+                                st.success(rec)
+                            else:
+                                st.warning(rec)
+            
+            with tab3:
+                st.subheader("🎓 Risk Management Education")
+                
+                with st.expander("📐 What is Position Sizing?"):
+                    st.markdown("""
+                    **Position sizing** determines how many shares/contracts to buy based on:
+                    - Your account size
+                    - Risk percentage per trade
+                    - Distance to stop loss
+                    
+                    **Example:**
+                    - Account: €10,000
+                    - Risk: 1% = €100
+                    - Entry: €100, Stop: €95 (€5 risk per share)
+                    - Position: €100 / €5 = 20 shares
+                    """)
+                
+                with st.expander("📊 What is Risk/Reward Ratio?"):
+                    st.markdown("""
+                    **Risk/Reward (R:R)** measures potential profit vs. potential loss.
+                    
+                    **Formula:** R:R = (Take Profit - Entry) / (Entry - Stop Loss)
+                    
+                    **Guidelines:**
+                    - **3:1** or higher = Excellent
+                    - **2:1** = Good
+                    - **1:1** = Breakeven (need 50% winrate)
+                    - **<1:1** = Poor (avoid!)
+                    """)
+                
+                with st.expander("🎯 What is Kelly Criterion?"):
+                    st.markdown("""
+                    **Kelly Criterion** calculates optimal bet size based on your edge.
+                    
+                    **Formula:** K% = W - [(1-W) / R]
+                    - W = Win rate
+                    - R = Average Win / Average Loss
+                    
+                    **Why Half-Kelly?**
+                    - Full Kelly can be aggressive
+                    - Half-Kelly reduces volatility
+                    - Still captures most growth potential
+                    """)
+                
+                with st.expander("💡 What is Expectancy?"):
+                    st.markdown("""
+                    **Expectancy** is your average profit/loss per trade.
+                    
+                    **Formula:** E = (W% × Avg Win) - (L% × Avg Loss)
+                    
+                    **Example:**
+                    - 40% winrate, €200 avg win
+                    - 60% loss rate, €100 avg loss
+                    - E = (0.4 × 200) - (0.6 × 100) = €20
+                    
+                    **Positive expectancy = Profitable system**
+                    """)
+                
+                with st.expander("⚠️ What is Risk of Ruin?"):
+                    st.markdown("""
+                    **Risk of Ruin** is probability of losing a large % of your account.
+                    
+                    **How to minimize:**
+                    - Keep risk per trade low (<2%)
+                    - Maintain high winrate or R:R
+                    - Never risk more than 5% per day
+                    - Use stop losses consistently
+                    
+                    **Golden Rule:** 
+                    Survive first, profit second!
+                    """)
     
     # PAGE: Daily Journal
     if selected_page == "📔 Daily Journal":
