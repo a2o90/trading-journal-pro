@@ -40,10 +40,40 @@ def json_load(filename):
             return []
     return []
 
+def sanitize_trade_data(trade):
+    """Sanitize trade data to ensure JSON serialization"""
+    if not isinstance(trade, dict):
+        return trade
+    
+    sanitized = {}
+    for key, value in trade.items():
+        if isinstance(value, datetime):
+            sanitized[key] = value.isoformat()
+        elif isinstance(value, (int, float, str, bool, type(None))):
+            sanitized[key] = value
+        elif isinstance(value, list):
+            sanitized[key] = [sanitize_trade_data(item) if isinstance(item, dict) else item for item in value]
+        elif isinstance(value, dict):
+            sanitized[key] = sanitize_trade_data(value)
+        else:
+            # Convert any other type to string
+            sanitized[key] = str(value)
+    
+    return sanitized
+
 def json_save(filename, data):
-    """Save data to JSON file"""
+    """Save data to JSON file with proper serialization"""
+    def json_serializer(obj):
+        """Custom JSON serializer for non-serializable objects"""
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        elif hasattr(obj, '__dict__'):
+            return obj.__dict__
+        else:
+            return str(obj)
+    
     with open(filename, 'w') as f:
-        json.dump(data, f, indent=2)
+        json.dump(data, f, indent=2, default=json_serializer)
 
 # ===== SMART DATA LAYER FUNCTIONS =====
 
@@ -139,7 +169,9 @@ def save_trades(trades):
         except Exception as e:
             st.error(f"DB Error saving trades: {e}")
     
-    json_save(TRADES_FILE, trades)
+    # Sanitize trades data before saving to JSON
+    sanitized_trades = [sanitize_trade_data(trade) for trade in trades]
+    json_save(TRADES_FILE, sanitized_trades)
 
 # ===== ACCOUNT FUNCTIONS =====
 
@@ -175,7 +207,9 @@ def save_accounts(accounts):
         except Exception as e:
             st.error(f"DB Error saving accounts: {e}")
     
-    json_save(ACCOUNTS_FILE, accounts)
+    # Sanitize accounts data before saving to JSON
+    sanitized_accounts = [sanitize_trade_data(account) for account in accounts]
+    json_save(ACCOUNTS_FILE, sanitized_accounts)
 
 # ===== SETTINGS FUNCTIONS =====
 
@@ -209,9 +243,9 @@ def save_settings(settings, user_id=None):
         except:
             pass
     
-    # Also save to JSON for fallback
-    with open(SETTINGS_FILE, 'w') as f:
-        json.dump(settings, f, indent=2)
+    # Sanitize settings data before saving to JSON
+    sanitized_settings = sanitize_trade_data(settings)
+    json_save(SETTINGS_FILE, sanitized_settings)
 
 # ===== QUOTES FUNCTIONS =====
 
