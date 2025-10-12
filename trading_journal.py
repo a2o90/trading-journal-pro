@@ -47,6 +47,16 @@ try:
 except Exception as e:
     CSV_HANDLER_AVAILABLE = False
 
+# Import gamification module
+try:
+    from gamification import (
+        check_achievements, calculate_level, get_weekly_challenges,
+        get_current_streaks, get_trading_stats_summary, ACHIEVEMENTS, LEVELS
+    )
+    GAMIFICATION_AVAILABLE = True
+except Exception as e:
+    GAMIFICATION_AVAILABLE = False
+
 # Import data layer (handles Database or JSON fallback)
 try:
     from data_layer import (
@@ -1487,6 +1497,7 @@ with st.sidebar:
         "🎬 Trade Replay",
         "📄 Export PDF",
         "📥 Import/Export",
+        "🏆 Achievements",
         "👨‍🏫 Mentor Mode",
         "❌ Mistakes",
         "🛡️ Avoided Trades",
@@ -4655,6 +4666,226 @@ if trades:
                         )
                     
                     st.divider()
+    
+    # PAGE: Achievements & Gamification
+    if selected_page == "🏆 Achievements":
+        st.header("🏆 Achievements & Progress")
+        st.info("💡 Track your trading journey through achievements, levels, and challenges")
+        
+        if not GAMIFICATION_AVAILABLE:
+            st.error("❌ Gamification module not available")
+        else:
+            # Load user achievements from session state or settings
+            if 'user_achievements' not in st.session_state:
+                st.session_state['user_achievements'] = []
+            if 'total_xp' not in st.session_state:
+                st.session_state['total_xp'] = 0
+            
+            user_achievements = st.session_state['user_achievements']
+            total_xp = st.session_state['total_xp']
+            
+            # Check for new achievements
+            unlocked, new_unlocks = check_achievements(trades, user_achievements)
+            
+            # Add new achievements and XP
+            for new_ach in new_unlocks:
+                if new_ach['id'] not in user_achievements:
+                    user_achievements.append(new_ach['id'])
+                    total_xp += new_ach['xp']
+                    st.balloons()
+                    st.success(f"🎉 Achievement Unlocked: **{new_ach['name']}** (+{new_ach['xp']} XP)")
+            
+            # Update session state
+            st.session_state['user_achievements'] = user_achievements
+            st.session_state['total_xp'] = total_xp
+            
+            # Calculate level
+            level_info = calculate_level(total_xp)
+            
+            # Display header with level and XP
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric("Level", level_info['current_level'], help="Your current trader level")
+            
+            with col2:
+                st.metric("Title", level_info['title'])
+            
+            with col3:
+                st.metric("Total XP", f"{total_xp:,}", help="Experience points earned")
+            
+            with col4:
+                if level_info['next_level']:
+                    st.metric("To Next Level", f"{level_info['xp_to_next_level']:,} XP")
+                else:
+                    st.metric("Status", "MAX LEVEL! 🏆")
+            
+            # Progress bar to next level
+            if level_info['next_level']:
+                current_level_start = level_info['current_level_xp']
+                next_level_xp = level_info['next_level']['xp']
+                progress = (total_xp - current_level_start) / (next_level_xp - current_level_start)
+                st.progress(progress)
+                st.caption(f"Level {level_info['current_level']} → Level {level_info['next_level']['level']}")
+            
+            st.divider()
+            
+            # Tabs for different gamification aspects
+            tab1, tab2, tab3, tab4 = st.tabs(["🏅 Achievements", "📊 Stats & Streaks", "🎯 Weekly Challenges", "📈 Level Progress"])
+            
+            with tab1:
+                st.subheader("🏅 Your Achievements")
+                
+                # Count achievements
+                total_achievements = len(ACHIEVEMENTS)
+                unlocked_count = len(user_achievements)
+                completion_pct = (unlocked_count / total_achievements * 100) if total_achievements > 0 else 0
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Unlocked", f"{unlocked_count}/{total_achievements}")
+                with col2:
+                    st.metric("Completion", f"{completion_pct:.1f}%")
+                with col3:
+                    st.metric("Total XP Earned", f"{total_xp:,}")
+                
+                st.divider()
+                
+                # Display achievements in a grid
+                unlocked_achs = []
+                locked_achs = []
+                
+                for ach_id, achievement in ACHIEVEMENTS.items():
+                    if ach_id in user_achievements:
+                        unlocked_achs.append((ach_id, achievement))
+                    else:
+                        locked_achs.append((ach_id, achievement))
+                
+                # Unlocked achievements
+                if unlocked_achs:
+                    st.subheader("✅ Unlocked")
+                    cols = st.columns(3)
+                    for idx, (ach_id, ach) in enumerate(unlocked_achs):
+                        with cols[idx % 3]:
+                            st.success(f"**{ach['name']}**")
+                            st.caption(ach['description'])
+                            st.caption(f"⭐ {ach['xp']} XP")
+                            st.write("")
+                
+                # Locked achievements
+                if locked_achs:
+                    st.subheader("🔒 Locked")
+                    cols = st.columns(3)
+                    for idx, (ach_id, ach) in enumerate(locked_achs):
+                        with cols[idx % 3]:
+                            st.info(f"**{ach['name']}**")
+                            st.caption(ach['description'])
+                            st.caption(f"⭐ {ach['xp']} XP")
+                            st.write("")
+            
+            with tab2:
+                st.subheader("📊 Trading Stats & Streaks")
+                
+                # Get current streaks
+                streaks = get_current_streaks(trades)
+                stats = get_trading_stats_summary(trades)
+                
+                # Current streaks
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Current Win Streak", f"{streaks['current_win_streak']} 🔥")
+                with col2:
+                    st.metric("Current Loss Streak", f"{streaks['current_loss_streak']} ❄️")
+                with col3:
+                    st.metric("Max Win Streak", f"{streaks['max_win_streak']} 🏆")
+                
+                st.divider()
+                
+                # Overall stats
+                st.subheader("📈 Overall Performance")
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.metric("Total Trades", stats['total_trades'])
+                with col2:
+                    st.metric("Win Rate", f"{stats['win_rate']:.1f}%")
+                with col3:
+                    st.metric("Total P&L", f"€{stats['total_pnl']:.2f}")
+                with col4:
+                    st.metric("Unique Symbols", stats['unique_symbols'])
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Best Trade", f"€{stats['best_trade']:.2f}")
+                with col2:
+                    st.metric("Worst Trade", f"€{stats['worst_trade']:.2f}")
+            
+            with tab3:
+                st.subheader("🎯 Weekly Challenges")
+                st.write("Complete weekly challenges to earn bonus XP!")
+                
+                # Get trades from this week
+                today = datetime.now()
+                week_start = today - timedelta(days=today.weekday())
+                week_trades = [t for t in trades if datetime.strptime(t['date'], '%Y-%m-%d') >= week_start]
+                
+                st.caption(f"Week of {week_start.strftime('%Y-%m-%d')}")
+                
+                # Get challenges
+                challenges = get_weekly_challenges(week_trades)
+                
+                # Display challenges
+                for challenge in challenges:
+                    if challenge['completed']:
+                        st.success(f"✅ **{challenge['name']}** (+{challenge['xp']} XP)")
+                        st.caption(challenge['description'])
+                    else:
+                        st.info(f"🎯 **{challenge['name']}** ({challenge['xp']} XP)")
+                        st.caption(challenge['description'])
+                    st.divider()
+                
+                # Weekly stats
+                if week_trades:
+                    st.subheader("📊 This Week's Performance")
+                    col1, col2, col3 = st.columns(3)
+                    
+                    week_wins = len([t for t in week_trades if t['pnl'] > 0])
+                    week_pnl = sum([t['pnl'] for t in week_trades])
+                    week_wr = (week_wins / len(week_trades) * 100) if week_trades else 0
+                    
+                    with col1:
+                        st.metric("Trades", len(week_trades))
+                    with col2:
+                        st.metric("Win Rate", f"{week_wr:.1f}%")
+                    with col3:
+                        st.metric("P&L", f"€{week_pnl:.2f}")
+            
+            with tab4:
+                st.subheader("📈 Level Progression")
+                st.write("Level up by earning XP through achievements and challenges!")
+                
+                # Show all levels
+                for level in LEVELS:
+                    if level['level'] <= level_info['current_level']:
+                        # Completed level
+                        st.success(f"✅ **Level {level['level']}: {level['title']}** ({level['xp']:,} XP)")
+                    elif level['level'] == level_info['current_level'] + 1:
+                        # Next level
+                        st.info(f"🎯 **Level {level['level']}: {level['title']}** ({level['xp']:,} XP) - {level_info['xp_to_next_level']:,} XP needed")
+                    else:
+                        # Future levels
+                        st.caption(f"🔒 Level {level['level']}: {level['title']} ({level['xp']:,} XP)")
+                
+                st.divider()
+                
+                # XP sources
+                st.subheader("💡 How to Earn XP")
+                st.markdown("""
+                - **Complete Achievements** - One-time XP rewards for milestones
+                - **Weekly Challenges** - Recurring challenges that reset each week
+                - **Consistent Trading** - Track your progress and maintain streaks
+                - **Journal Your Trades** - Add notes and analysis to earn extra XP
+                """)
     
     # PAGE: Mentor Mode
     if selected_page == "👨‍🏫 Mentor Mode":
