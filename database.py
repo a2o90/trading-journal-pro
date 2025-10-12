@@ -263,13 +263,23 @@ def db_load_users():
     return [dict(row) for row in result] if result else []
 
 def db_save_user(username, password, display_name):
-    """Save a new user to database"""
+    """Save a new user to database and create default Main Account"""
     result = execute_query("""
         INSERT INTO users (username, password, display_name, created_at)
         VALUES (%s, %s, %s, %s)
         RETURNING id
     """, (username, password, display_name, datetime.now().strftime('%Y-%m-%d')), fetchone=True)
-    return result['id'] if result else None
+    
+    if result:
+        user_id = result['id']
+        # Create default Main Account for new user
+        execute_query("""
+            INSERT INTO accounts (user_id, name, size)
+            VALUES (%s, %s, %s)
+        """, (user_id, 'Main Account', 10000))
+        return user_id
+    
+    return None
 
 def db_update_password(user_id, new_password):
     """Update user password"""
@@ -280,15 +290,31 @@ def db_update_password(user_id, new_password):
 # ===== ACCOUNT FUNCTIONS =====
 
 def db_load_accounts(user_id=None):
-    """Load accounts from database"""
+    """Load accounts from database - Auto-create Main Account if none exists"""
     if user_id is not None:
         result = execute_query("""
             SELECT * FROM accounts WHERE user_id = %s ORDER BY id
         """, (user_id,), fetch=True)
+        
+        accounts = [dict(row) for row in result] if result else []
+        
+        # If user has no accounts, create a default Main Account
+        if not accounts and user_id is not None:
+            execute_query("""
+                INSERT INTO accounts (user_id, name, size)
+                VALUES (%s, %s, %s)
+            """, (user_id, 'Main Account', 10000))
+            
+            # Reload accounts after creating default
+            result = execute_query("""
+                SELECT * FROM accounts WHERE user_id = %s ORDER BY id
+            """, (user_id,), fetch=True)
+            accounts = [dict(row) for row in result] if result else []
+        
+        return accounts
     else:
         result = execute_query("SELECT * FROM accounts ORDER BY id", fetch=True)
-    
-    return [dict(row) for row in result] if result else []
+        return [dict(row) for row in result] if result else []
 
 def db_save_accounts(accounts):
     """Save/update accounts (bulk operation)"""
