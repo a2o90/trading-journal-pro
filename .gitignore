@@ -26,12 +26,11 @@ wheels/
 # Streamlit
 .streamlit/
 
-# Data files (contains sensitive user data)
-trades.json
-accounts.json
-settings.json
-users.json
-daily_notes.json
+# NOTE: Data files are now tracked in git for persistence on Streamlit Cloud
+# Make sure your repository is PRIVATE to protect user data!
+# Backup files (exclude backups from git)
+*.backup.json
+*_backup_*.json
 
 # Backup
 trading_journal_backup.py
