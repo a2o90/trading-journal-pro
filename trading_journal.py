@@ -5,6 +5,44 @@ import os
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import calendar as cal
+import numpy as np
+from collections import defaultdict
+
+def safe_plot(data, title, xlabel, ylabel, ax=None):
+    """Safely plot data with error handling"""
+    try:
+        if data is None or len(data) == 0:
+            return False
+        
+        # Ensure data is numeric
+        if hasattr(data, 'values'):
+            data = pd.to_numeric(data.values, errors='coerce')
+        else:
+            data = pd.to_numeric(data, errors='coerce')
+        
+        # Remove NaN values
+        data = data.dropna()
+        
+        if len(data) == 0:
+            return False
+        
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 5))
+        
+        colors = ['#00ff88' if x > 0 else '#ff4444' for x in data]
+        data.plot(kind='bar', ax=ax, color=colors, edgecolor='white', linewidth=1.5)
+        ax.axhline(y=0, color='white', linewidth=1)
+        ax.set_xlabel(xlabel, fontsize=12)
+        ax.set_ylabel(ylabel, fontsize=12)
+        ax.set_title(title, fontsize=14, fontweight='bold')
+        ax.grid(True, alpha=0.3, axis='y', linestyle='--')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        
+        return True
+    except Exception as e:
+        st.error(f"Error creating chart: {str(e)}")
+        return False
 
 # Import analytics module
 try:
@@ -2834,19 +2872,34 @@ if trades:
         with col2:
             st.subheader("💼 Profit by Symbol")
             if len(filtered_df) > 0:
-                profit_by_symbol = filtered_df.groupby('symbol')['pnl'].sum().sort_values(ascending=False)
-                
-                fig, ax = plt.subplots(figsize=(10, 5))
-                colors = ['#00ff88' if x > 0 else '#ff4444' for x in profit_by_symbol.values]
-                profit_by_symbol.plot(kind='bar', ax=ax, color=colors, edgecolor='white', linewidth=1.5)
-                ax.axhline(y=0, color='white', linewidth=1)
-                ax.set_xlabel('Symbol', fontsize=12)
-                ax.set_ylabel('Total P&L ($)', fontsize=12)
-                ax.set_title('Profit/Loss by Symbol', fontsize=14, fontweight='bold')
-                ax.grid(True, alpha=0.3, axis='y', linestyle='--')
-                plt.xticks(rotation=45)
-                plt.tight_layout()
-                st.pyplot(fig)
+                try:
+                    # Ensure pnl column exists and is numeric
+                    if 'pnl' not in filtered_df.columns:
+                        st.warning("P&L data not available")
+                    else:
+                        # Convert pnl to numeric, handling any non-numeric values
+                        filtered_df['pnl'] = pd.to_numeric(filtered_df['pnl'], errors='coerce')
+                        
+                        # Remove any rows with NaN pnl values
+                        valid_df = filtered_df.dropna(subset=['pnl'])
+                        
+                        if len(valid_df) > 0:
+                            profit_by_symbol = valid_df.groupby('symbol')['pnl'].sum().sort_values(ascending=False)
+                            
+                            if len(profit_by_symbol) > 0:
+                                fig, ax = plt.subplots(figsize=(10, 5))
+                                if safe_plot(profit_by_symbol, 'Profit/Loss by Symbol', 'Symbol', 'Total P&L ($)', ax):
+                                    st.pyplot(fig)
+                                else:
+                                    st.info("No valid symbol data to display")
+                            else:
+                                st.info("No valid symbol data to display")
+                        else:
+                            st.info("No valid P&L data to display")
+                except Exception as e:
+                    st.error(f"Error creating chart: {str(e)}")
+                    st.info("Displaying data table instead:")
+                    st.dataframe(filtered_df[['symbol', 'pnl', 'date']].head(10))
             else:
                 st.info("No data to display")
         
