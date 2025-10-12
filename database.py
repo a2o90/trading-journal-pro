@@ -11,9 +11,8 @@ from datetime import datetime
 
 # ===== CONNECTION =====
 
-@st.cache_resource
 def get_connection():
-    """Get database connection (cached)"""
+    """Get fresh database connection"""
     try:
         conn = psycopg2.connect(st.secrets["connections"]["postgresql"]["url"])
         return conn
@@ -22,12 +21,16 @@ def get_connection():
         return None
 
 def execute_query(query, params=None, fetch=False, fetchone=False):
-    """Execute a database query"""
-    conn = get_connection()
-    if not conn:
-        return None
+    """Execute a database query with proper connection handling"""
+    conn = None
+    cur = None
     
     try:
+        # Get fresh connection for each query
+        conn = get_connection()
+        if not conn:
+            return None
+        
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute(query, params)
         
@@ -39,12 +42,20 @@ def execute_query(query, params=None, fetch=False, fetchone=False):
             result = None
         
         conn.commit()
-        cur.close()
         return result
+        
     except Exception as e:
-        conn.rollback()
+        if conn:
+            conn.rollback()
         st.error(f"❌ Database error: {e}")
         return None
+    
+    finally:
+        # Always close cursor and connection
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
 
 # ===== INITIALIZATION =====
 
