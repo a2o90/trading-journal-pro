@@ -30,6 +30,23 @@ try:
 except Exception as e:
     RISK_CALC_AVAILABLE = False
 
+# Import PDF export module
+try:
+    from pdf_export import generate_weekly_report, generate_monthly_report, generate_custom_report
+    PDF_EXPORT_AVAILABLE = True
+except Exception as e:
+    PDF_EXPORT_AVAILABLE = False
+
+# Import CSV handler module
+try:
+    from csv_handler import (
+        parse_csv_import, export_trades_to_csv, generate_csv_template,
+        get_import_stats, BROKER_FORMATS
+    )
+    CSV_HANDLER_AVAILABLE = True
+except Exception as e:
+    CSV_HANDLER_AVAILABLE = False
+
 # Import data layer (handles Database or JSON fallback)
 try:
     from data_layer import (
@@ -91,8 +108,8 @@ def save_users(users):
     if DATA_LAYER_AVAILABLE:
         dl_save_users(users)
     else:
-        with open(USERS_FILE, 'w') as f:
-            json.dump(users, f, indent=2)
+    with open(USERS_FILE, 'w') as f:
+        json.dump(users, f, indent=2)
 
 def authenticate_user(username, password):
     """Authenticate user and return user object if valid"""
@@ -458,8 +475,8 @@ def save_settings(settings):
     if DATA_LAYER_AVAILABLE:
         dl_save_settings(settings)
     else:
-        with open(SETTINGS_FILE, 'w') as f:
-            json.dump(settings, f, indent=2)
+    with open(SETTINGS_FILE, 'w') as f:
+        json.dump(settings, f, indent=2)
 
 # ===== MISTAKES MANAGEMENT =====
 
@@ -690,8 +707,8 @@ def save_accounts(accounts):
     if DATA_LAYER_AVAILABLE:
         dl_save_accounts(accounts)
     else:
-        with open(ACCOUNTS_FILE, 'w') as f:
-            json.dump(accounts, f, indent=2)
+    with open(ACCOUNTS_FILE, 'w') as f:
+        json.dump(accounts, f, indent=2)
 
 def load_trades(user_id=None):
     """Load trades - Uses Database or JSON fallback"""
@@ -747,8 +764,8 @@ def save_trades(trades):
     if DATA_LAYER_AVAILABLE:
         dl_save_trades(trades)
     else:
-        with open(TRADES_FILE, 'w') as f:
-            json.dump(trades, f, indent=2)
+    with open(TRADES_FILE, 'w') as f:
+        json.dump(trades, f, indent=2)
 
 def delete_trade(trade_id):
     """Delete a specific trade by ID"""
@@ -1468,6 +1485,8 @@ with st.sidebar:
         "🎯 Risk Calculator",
         "📔 Daily Journal",
         "🎬 Trade Replay",
+        "📄 Export PDF",
+        "📥 Import/Export",
         "👨‍🏫 Mentor Mode",
         "❌ Mistakes",
         "🛡️ Avoided Trades",
@@ -4198,6 +4217,444 @@ if trades:
                 st.info("No trades match your filter selection")
         else:
             st.info("🎬 Add some trades to use Trade Replay!")
+    
+    # PAGE: Export PDF
+    if selected_page == "📄 Export PDF":
+        st.header("📄 Export PDF Reports")
+        st.info("💡 Generate professional PDF reports with charts and analysis")
+        
+        if not PDF_EXPORT_AVAILABLE:
+            st.error("❌ PDF Export module not available. Install required packages: matplotlib")
+        elif len(trades) < 5:
+            st.warning("📊 Add at least 5 trades to generate meaningful reports")
+        else:
+            tab1, tab2, tab3 = st.tabs(["📅 Weekly Report", "📆 Monthly Report", "🎯 Custom Range"])
+            
+            with tab1:
+                st.subheader("📅 Weekly Report")
+                st.write("Generate a comprehensive weekly trading report with:")
+                st.markdown("""
+                - 📊 Summary statistics (Total P&L, Win Rate, Avg Win/Loss)
+                - 📈 Daily P&L breakdown chart
+                - 📉 Cumulative equity curve
+                - 🎯 Performance by symbol
+                - 📋 Detailed trade list
+                """)
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    # Week selector
+                    today = datetime.now()
+                    week_options = []
+                    for i in range(12):  # Last 12 weeks
+                        week_start = today - timedelta(weeks=i, days=today.weekday())
+                        week_end = week_start + timedelta(days=6)
+                        week_options.append((week_start, week_end, f"Week {week_start.strftime('%Y-%m-%d')} to {week_end.strftime('%Y-%m-%d')}"))
+                    
+                    selected_week_idx = st.selectbox(
+                        "Select Week",
+                        range(len(week_options)),
+                        format_func=lambda x: week_options[x][2],
+                        key="week_selector"
+                    )
+                    
+                    week_start, week_end, _ = week_options[selected_week_idx]
+                
+                with col2:
+                    st.write("")
+                    st.write("")
+                    if st.button("📄 Generate Weekly PDF", type="primary", use_container_width=True):
+                        with st.spinner("Generating PDF report..."):
+                            try:
+                                pdf_buffer = generate_weekly_report(
+                                    trades, 
+                                    week_start, 
+                                    week_end, 
+                                    current_user.get('display_name', 'Trader')
+                                )
+                                
+                                if pdf_buffer:
+                                    st.success("✅ PDF Report Generated!")
+                                    st.download_button(
+                                        label="⬇️ Download Weekly Report",
+                                        data=pdf_buffer,
+                                        file_name=f"weekly_report_{week_start.strftime('%Y%m%d')}.pdf",
+                                        mime="application/pdf",
+                                        use_container_width=True
+                                    )
+                                else:
+                                    st.warning("⚠️ No trades found for this week")
+                            except Exception as e:
+                                st.error(f"❌ Error generating PDF: {str(e)}")
+            
+            with tab2:
+                st.subheader("📆 Monthly Report")
+                st.write("Generate a detailed monthly trading report including:")
+                st.markdown("""
+                - 📊 Monthly summary with key metrics
+                - 📈 Weekly P&L breakdown
+                - 📉 Equity curve with drawdown visualization
+                - 🎯 Performance by setup and symbol
+                - ⏰ Time-of-day analysis
+                - 📊 R-Multiple distribution
+                """)
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    # Month selector
+                    current_date = datetime.now()
+                    months = []
+                    for i in range(12):  # Last 12 months
+                        date = current_date - timedelta(days=i*30)
+                        months.append((date.year, date.month, date.strftime('%B %Y')))
+                    
+                    selected_month_idx = st.selectbox(
+                        "Select Month",
+                        range(len(months)),
+                        format_func=lambda x: months[x][2],
+                        key="month_selector"
+                    )
+                    
+                    year, month, _ = months[selected_month_idx]
+                
+                with col2:
+                    st.write("")
+                    st.write("")
+                    if st.button("📄 Generate Monthly PDF", type="primary", use_container_width=True):
+                        with st.spinner("Generating PDF report..."):
+                            try:
+                                pdf_buffer = generate_monthly_report(
+                                    trades,
+                                    month,
+                                    year,
+                                    current_user.get('display_name', 'Trader')
+                                )
+                                
+                                if pdf_buffer:
+                                    st.success("✅ PDF Report Generated!")
+                                    st.download_button(
+                                        label="⬇️ Download Monthly Report",
+                                        data=pdf_buffer,
+                                        file_name=f"monthly_report_{year}{month:02d}.pdf",
+                                        mime="application/pdf",
+                                        use_container_width=True
+                                    )
+                                else:
+                                    st.warning("⚠️ No trades found for this month")
+                            except Exception as e:
+                                st.error(f"❌ Error generating PDF: {str(e)}")
+            
+            with tab3:
+                st.subheader("🎯 Custom Date Range Report")
+                st.write("Generate a report for any custom date range")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    custom_start = st.date_input(
+                        "Start Date",
+                        value=datetime.now() - timedelta(days=30),
+                        key="custom_start"
+                    )
+                
+                with col2:
+                    custom_end = st.date_input(
+                        "End Date",
+                        value=datetime.now(),
+                        key="custom_end"
+                    )
+                
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    report_title = st.text_input("Report Title", value="Custom Trading Report", key="report_title")
+                
+                with col2:
+                    st.write("")
+                    st.write("")
+                    if st.button("📄 Generate Custom PDF", type="primary", use_container_width=True):
+                        if custom_start > custom_end:
+                            st.error("❌ Start date must be before end date")
+                        else:
+                            with st.spinner("Generating PDF report..."):
+                                try:
+                                    pdf_buffer = generate_custom_report(
+                                        trades,
+                                        datetime.combine(custom_start, datetime.min.time()),
+                                        datetime.combine(custom_end, datetime.max.time()),
+                                        current_user.get('display_name', 'Trader'),
+                                        report_title
+                                    )
+                                    
+                                    if pdf_buffer:
+                                        st.success("✅ PDF Report Generated!")
+                                        st.download_button(
+                                            label="⬇️ Download Custom Report",
+                                            data=pdf_buffer,
+                                            file_name=f"custom_report_{custom_start.strftime('%Y%m%d')}_{custom_end.strftime('%Y%m%d')}.pdf",
+                                            mime="application/pdf",
+                                            use_container_width=True
+                                        )
+                                    else:
+                                        st.warning("⚠️ No trades found for this date range")
+                                except Exception as e:
+                                    st.error(f"❌ Error generating PDF: {str(e)}")
+                
+                # Preview stats for selected range
+                if custom_start and custom_end:
+                    range_trades = [t for t in trades if custom_start <= datetime.strptime(t['date'], '%Y-%m-%d').date() <= custom_end]
+                    
+                    if range_trades:
+                        st.divider()
+                        st.subheader("📊 Preview Stats")
+                        
+                        col1, col2, col3, col4 = st.columns(4)
+                        
+                        with col1:
+                            st.metric("Total Trades", len(range_trades))
+                        with col2:
+                            total_pnl = sum(t['pnl'] for t in range_trades)
+                            st.metric("Total P&L", f"€{total_pnl:.2f}")
+                        with col3:
+                            wins = len([t for t in range_trades if t['pnl'] > 0])
+                            wr = (wins / len(range_trades) * 100) if range_trades else 0
+                            st.metric("Win Rate", f"{wr:.1f}%")
+                        with col4:
+                            trading_days = len(set([t['date'] for t in range_trades]))
+                            st.metric("Trading Days", trading_days)
+    
+    # PAGE: Import/Export CSV
+    if selected_page == "📥 Import/Export":
+        st.header("📥 Import/Export Trades")
+        st.info("💡 Import trades from various broker platforms or export your journal data")
+        
+        if not CSV_HANDLER_AVAILABLE:
+            st.error("❌ CSV Handler module not available")
+        else:
+            tab1, tab2, tab3 = st.tabs(["📥 Import Trades", "📤 Export Trades", "📋 Templates"])
+            
+            with tab1:
+                st.subheader("📥 Import Trades from CSV")
+                st.write("**Supported Formats:**")
+                st.markdown("""
+                - ✅ **MetaTrader 4/5** - Standard MT4/MT5 history export
+                - ✅ **TradingView** - Strategy tester results
+                - ✅ **Interactive Brokers** - Flex query export
+                - ✅ **Trading Journal Pro** - Native format (full data)
+                - ✅ **Generic** - Simple CSV format
+                """)
+                
+                st.divider()
+                
+                # Format selector
+                broker_format = st.selectbox(
+                    "Select Broker/Platform Format",
+                    list(BROKER_FORMATS.keys()),
+                    key="import_format"
+                )
+                
+                # File uploader
+                uploaded_file = st.file_uploader(
+                    "Upload CSV File",
+                    type=['csv'],
+                    help="Select your CSV file to import trades",
+                    key="csv_upload"
+                )
+                
+                if uploaded_file:
+                    # Preview file
+                    with st.expander("📄 Preview Uploaded File"):
+                        try:
+                            preview_df = pd.read_csv(uploaded_file)
+                            st.dataframe(preview_df.head(10), use_container_width=True)
+                            uploaded_file.seek(0)  # Reset file pointer
+                        except Exception as e:
+                            st.error(f"Cannot preview file: {str(e)}")
+                    
+                    col1, col2 = st.columns([1, 2])
+                    
+                    with col1:
+                        if st.button("🚀 Import Trades", type="primary", use_container_width=True):
+                            with st.spinner("Importing trades..."):
+                                try:
+                                    # Read file content
+                                    file_content = uploaded_file.read()
+                                    uploaded_file.seek(0)
+                                    
+                                    # Parse CSV
+                                    success_count, error_count, imported_trades, errors = parse_csv_import(
+                                        file_content,
+                                        broker_format,
+                                        current_user['id']
+                                    )
+                                    
+                                    if success_count > 0:
+                                        # Get stats
+                                        stats = get_import_stats(imported_trades)
+                                        
+                                        # Show preview
+                                        st.success(f"✅ Successfully imported {success_count} trades!")
+                                        
+                                        if error_count > 0:
+                                            st.warning(f"⚠️ {error_count} trades had errors")
+                                            with st.expander("View Errors"):
+                                                for error in errors:
+                                                    st.error(error)
+                                        
+                                        # Show stats
+                                        st.subheader("📊 Import Preview")
+                                        col1, col2, col3, col4 = st.columns(4)
+                                        with col1:
+                                            st.metric("Total Trades", stats['total_trades'])
+                                        with col2:
+                                            st.metric("Win Rate", f"{stats['win_rate']:.1f}%")
+                                        with col3:
+                                            st.metric("Total P&L", f"€{stats['total_pnl']:.2f}")
+                                        with col4:
+                                            st.metric("Symbols", stats['unique_symbols'])
+                                        
+                                        st.caption(f"Date Range: {stats['date_range']}")
+                                        
+                                        # Confirm import
+                                        st.divider()
+                                        col1, col2 = st.columns(2)
+                                        
+                                        with col1:
+                                            if st.button("✅ Confirm & Add to Journal", type="primary", use_container_width=True):
+                                                # Load existing trades
+                                                existing_trades = load_trades(current_user['id'])
+                                                
+                                                # Assign new IDs
+                                                max_id = max([t.get('id', 0) for t in existing_trades]) if existing_trades else 0
+                                                for i, trade in enumerate(imported_trades):
+                                                    trade['id'] = max_id + i + 1
+                                                
+                                                # Merge and save
+                                                all_trades = existing_trades + imported_trades
+                                                save_trades(all_trades)
+                                                
+                                                st.success(f"🎉 {success_count} trades added to your journal!")
+                                                st.balloons()
+                                                st.rerun()
+                                        
+                                        with col2:
+                                            if st.button("❌ Cancel Import", use_container_width=True):
+                                                st.info("Import cancelled")
+                                                st.rerun()
+                                        
+                                        # Show preview of trades
+                                        with st.expander("👀 Preview Imported Trades"):
+                                            preview_df = pd.DataFrame(imported_trades)
+                                            st.dataframe(preview_df, use_container_width=True)
+                                    
+                                    else:
+                                        st.error("❌ No trades could be imported")
+                                        if errors:
+                                            st.write("**Errors:**")
+                                            for error in errors:
+                                                st.error(error)
+                                
+                                except Exception as e:
+                                    st.error(f"❌ Import failed: {str(e)}")
+                                    import traceback
+                                    with st.expander("Error Details"):
+                                        st.code(traceback.format_exc())
+            
+            with tab2:
+                st.subheader("📤 Export Trades to CSV")
+                st.write("Export your trades in various formats for backup or analysis")
+                
+                if len(trades) == 0:
+                    st.warning("📊 No trades to export")
+                else:
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        export_format = st.selectbox(
+                            "Select Export Format",
+                            ["Trading Journal Pro", "Generic"],
+                            key="export_format"
+                        )
+                        
+                        # Date range filter
+                        use_date_filter = st.checkbox("Filter by date range", key="export_date_filter")
+                        
+                        if use_date_filter:
+                            col1a, col1b = st.columns(2)
+                            with col1a:
+                                export_start = st.date_input("Start Date", value=datetime.now() - timedelta(days=30), key="export_start")
+                            with col1b:
+                                export_end = st.date_input("End Date", value=datetime.now(), key="export_end")
+                            
+                            # Filter trades
+                            trades_to_export = [
+                                t for t in trades 
+                                if export_start <= datetime.strptime(t['date'], '%Y-%m-%d').date() <= export_end
+                            ]
+                        else:
+                            trades_to_export = trades
+                    
+                    with col2:
+                        st.metric("Trades to Export", len(trades_to_export))
+                        
+                        if len(trades_to_export) > 0:
+                            csv_data = export_trades_to_csv(trades_to_export, export_format)
+                            
+                            st.download_button(
+                                label="⬇️ Download CSV",
+                                data=csv_data,
+                                file_name=f"trades_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                                mime="text/csv",
+                                type="primary",
+                                use_container_width=True
+                            )
+                        else:
+                            st.warning("No trades in selected date range")
+                    
+                    # Show preview
+                    if len(trades_to_export) > 0:
+                        st.divider()
+                        st.subheader("📊 Export Preview")
+                        export_df = pd.DataFrame(trades_to_export)
+                        st.dataframe(export_df.head(20), use_container_width=True)
+                        st.caption(f"Showing first 20 of {len(trades_to_export)} trades")
+            
+            with tab3:
+                st.subheader("📋 CSV Templates")
+                st.write("Download empty CSV templates with correct column headers for each broker format")
+                
+                st.markdown("""
+                **How to use templates:**
+                1. Download the template for your broker/platform
+                2. Fill in your trade data
+                3. Save as CSV
+                4. Import using the "Import Trades" tab
+                """)
+                
+                st.divider()
+                
+                for broker_name in BROKER_FORMATS.keys():
+                    col1, col2 = st.columns([3, 1])
+                    
+                    with col1:
+                        st.write(f"**{broker_name}**")
+                        template_info = BROKER_FORMATS[broker_name]
+                        st.caption(f"Columns: {', '.join(template_info['columns'][:5])}...")
+                    
+                    with col2:
+                        template_csv = generate_csv_template(broker_name)
+                        st.download_button(
+                            label="📥 Download",
+                            data=template_csv,
+                            file_name=f"template_{broker_name.replace(' ', '_').lower()}.csv",
+                            mime="text/csv",
+                            key=f"template_{broker_name}",
+                            use_container_width=True
+                        )
+                    
+                    st.divider()
     
     # PAGE: Mentor Mode
     if selected_page == "👨‍🏫 Mentor Mode":
