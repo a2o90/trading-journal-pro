@@ -5,13 +5,24 @@ Provides integration with TradingView webhooks and other broker APIs
 """
 
 import json
-import requests
 import hmac
 import hashlib
 from datetime import datetime
-from flask import Flask, request, jsonify
 import threading
 import time
+
+# Optional imports
+try:
+    import requests
+    REQUESTS_AVAILABLE = True
+except ImportError:
+    REQUESTS_AVAILABLE = False
+
+try:
+    from flask import Flask, request, jsonify
+    FLASK_AVAILABLE = True
+except ImportError:
+    FLASK_AVAILABLE = False
 
 class TradingViewWebhookHandler:
     def __init__(self):
@@ -258,6 +269,12 @@ class BrokerIntegrationManager:
     
     def test_webhook_connection(self, webhook_url):
         """Test webhook connection"""
+        if not REQUESTS_AVAILABLE:
+            return {
+                'success': False,
+                'error': 'Requests library not available. Please install: pip install requests'
+            }
+        
         try:
             test_data = {
                 'symbol': 'EURUSD',
