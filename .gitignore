@@ -26,9 +26,22 @@ wheels/
 # Streamlit
 .streamlit/
 
-# NOTE: Data files are now tracked in git for persistence on Streamlit Cloud
-# Make sure your repository is PRIVATE to protect user data!
-# Backup files (exclude backups from git)
+# SECURITY: Data files with sensitive user information
+# DO NOT track in git when repo is public!
+trades.json
+accounts.json
+users.json
+daily_notes.json
+mistakes.json
+avoided_trades.json
+pretrade_analysis.json
+mindset_checkins.json
+
+# Settings and quotes can be tracked (no sensitive data)
+# settings.json (tracked)
+# quotes.json (tracked)
+
+# Backup files
 *.backup.json
 *_backup_*.json
 
