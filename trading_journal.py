@@ -6,6 +6,29 @@ from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import calendar as cal
 
+# Import data layer (handles Database or JSON fallback)
+try:
+    from data_layer import (
+        load_users as dl_load_users,
+        save_users as dl_save_users,
+        register_user as dl_register_user,
+        load_trades as dl_load_trades,
+        save_trades as dl_save_trades,
+        load_accounts as dl_load_accounts,
+        save_accounts as dl_save_accounts,
+        load_settings as dl_load_settings,
+        save_settings as dl_save_settings,
+        load_quotes as dl_load_quotes,
+        save_quotes as dl_save_quotes,
+        add_quote as dl_add_quote,
+        use_database,
+        get_data_source
+    )
+    DATA_LAYER_AVAILABLE = True
+except Exception as e:
+    DATA_LAYER_AVAILABLE = False
+    st.error(f"Data layer import failed: {e}")
+
 # Configuration
 TRADES_FILE = "trades.json"
 ACCOUNTS_FILE = "accounts.json"
@@ -26,24 +49,26 @@ LAST_UPDATE = "2025-10-12"
 # ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
 
 def load_users():
-    """Load users from JSON file"""
+    """Load users - Uses Database or JSON fallback"""
+    if DATA_LAYER_AVAILABLE:
+        return dl_load_users()
+    # Fallback
     if os.path.exists(USERS_FILE):
         try:
             with open(USERS_FILE, 'r') as f:
                 return json.load(f)
         except:
-            # Get admin password from environment variable or use default
-            admin_pass = os.environ.get('ADMIN_PASSWORD', 'ChangeMe123!')
-            return [{"id": 0, "username": "admin", "password": admin_pass, "display_name": "Admin", "created_at": datetime.now().strftime('%Y-%m-%d')}]
-    
-    # Get admin password from environment variable or use default
+            pass
     admin_pass = os.environ.get('ADMIN_PASSWORD', 'ChangeMe123!')
     return [{"id": 0, "username": "admin", "password": admin_pass, "display_name": "Admin", "created_at": datetime.now().strftime('%Y-%m-%d')}]
 
 def save_users(users):
-    """Save users to JSON file"""
-    with open(USERS_FILE, 'w') as f:
-        json.dump(users, f, indent=2)
+    """Save users - Uses Database or JSON fallback"""
+    if DATA_LAYER_AVAILABLE:
+        dl_save_users(users)
+    else:
+        with open(USERS_FILE, 'w') as f:
+            json.dump(users, f, indent=2)
 
 def authenticate_user(username, password):
     """Authenticate user and return user object if valid"""
@@ -54,15 +79,16 @@ def authenticate_user(username, password):
     return None
 
 def register_user(username, password, display_name):
-    """Register a new user"""
-    users = load_users()
+    """Register a new user - Uses Database or JSON fallback"""
+    if DATA_LAYER_AVAILABLE:
+        return dl_register_user(username, password, display_name)
     
-    # Check if username already exists
+    # Fallback to JSON
+    users = load_users()
     for user in users:
         if user['username'] == username:
             return False, "Username already exists"
     
-    # Create new user
     new_id = max([u['id'] for u in users], default=-1) + 1
     new_user = {
         'id': new_id,
@@ -355,12 +381,15 @@ current_user = st.session_state['user']
 # ===== APP STARTS HERE (after login) =====
 
 def load_settings():
-    """Load app settings"""
+    """Load app settings - Uses Database or JSON fallback"""
+    if DATA_LAYER_AVAILABLE:
+        return dl_load_settings()
+    
+    # Fallback to JSON
     if os.path.exists(SETTINGS_FILE):
         try:
             with open(SETTINGS_FILE, 'r') as f:
                 settings = json.load(f)
-                # Add default values if not present
                 if 'currency' not in settings:
                     settings['currency'] = "$"
                 if 'dark_mode' not in settings:
@@ -371,9 +400,12 @@ def load_settings():
     return {"currency": "$", "dark_mode": True}
 
 def save_settings(settings):
-    """Save app settings"""
-    with open(SETTINGS_FILE, 'w') as f:
-        json.dump(settings, f, indent=2)
+    """Save app settings - Uses Database or JSON fallback"""
+    if DATA_LAYER_AVAILABLE:
+        dl_save_settings(settings)
+    else:
+        with open(SETTINGS_FILE, 'w') as f:
+            json.dump(settings, f, indent=2)
 
 # ===== MISTAKES MANAGEMENT =====
 
@@ -497,7 +529,11 @@ def add_pretrade_analysis(user_id, symbol, direction, entry_plan, stop_loss, tak
 # ===== QUOTES SYSTEM =====
 
 def load_quotes():
-    """Load quotes from JSON file"""
+    """Load quotes - Uses Database or JSON fallback"""
+    if DATA_LAYER_AVAILABLE:
+        return dl_load_quotes()
+    
+    # Fallback to JSON
     if os.path.exists(QUOTES_FILE):
         try:
             with open(QUOTES_FILE, 'r') as f:
@@ -507,12 +543,19 @@ def load_quotes():
     return []
 
 def save_quotes(quotes):
-    """Save quotes to JSON file"""
-    with open(QUOTES_FILE, 'w') as f:
-        json.dump(quotes, f, indent=2)
+    """Save quotes - Uses Database or JSON fallback"""
+    if DATA_LAYER_AVAILABLE:
+        dl_save_quotes(quotes)
+    else:
+        with open(QUOTES_FILE, 'w') as f:
+            json.dump(quotes, f, indent=2)
 
 def add_quote(text, author=""):
-    """Add a new quote (admin only)"""
+    """Add a new quote - Uses Database or JSON fallback"""
+    if DATA_LAYER_AVAILABLE:
+        return dl_add_quote(text, author)
+    
+    # Fallback to JSON
     quotes = load_quotes()
     new_id = max([q['id'] for q in quotes], default=-1) + 1
     quote = {
@@ -565,7 +608,11 @@ def add_mindset_checkin(user_id, focus_level, locked_in, emotional_state, notes=
     return checkin
 
 def load_accounts(user_id=None):
-    """Load accounts from JSON file, optionally filtered by user_id"""
+    """Load accounts - Uses Database or JSON fallback"""
+    if DATA_LAYER_AVAILABLE:
+        return dl_load_accounts(user_id)
+    
+    # Fallback to JSON
     if os.path.exists(ACCOUNTS_FILE):
         try:
             with open(ACCOUNTS_FILE, 'r') as f:
@@ -585,12 +632,19 @@ def load_accounts(user_id=None):
     return [{"name": "Main Account", "size": 10000, "id": 0, "user_id": user_id if user_id else 0}]
 
 def save_accounts(accounts):
-    """Save accounts to JSON file"""
-    with open(ACCOUNTS_FILE, 'w') as f:
-        json.dump(accounts, f, indent=2)
+    """Save accounts - Uses Database or JSON fallback"""
+    if DATA_LAYER_AVAILABLE:
+        dl_save_accounts(accounts)
+    else:
+        with open(ACCOUNTS_FILE, 'w') as f:
+            json.dump(accounts, f, indent=2)
 
 def load_trades(user_id=None):
-    """Load trades from JSON file, optionally filtered by user_id"""
+    """Load trades - Uses Database or JSON fallback"""
+    if DATA_LAYER_AVAILABLE:
+        return dl_load_trades(user_id)
+    
+    # Fallback to JSON
     if os.path.exists(TRADES_FILE):
         try:
             with open(TRADES_FILE, 'r') as f:
@@ -635,9 +689,12 @@ def load_trades(user_id=None):
     return []
 
 def save_trades(trades):
-    """Save trades to JSON file"""
-    with open(TRADES_FILE, 'w') as f:
-        json.dump(trades, f, indent=2)
+    """Save trades - Uses Database or JSON fallback"""
+    if DATA_LAYER_AVAILABLE:
+        dl_save_trades(trades)
+    else:
+        with open(TRADES_FILE, 'w') as f:
+            json.dump(trades, f, indent=2)
 
 def delete_trade(trade_id):
     """Delete a specific trade by ID"""
@@ -1035,21 +1092,42 @@ with header_col3:
 st.write("")
 
 # ===== DATABASE MIGRATION NOTICE =====
-st.warning("""
-⚠️ **DATABASE MIGRATIE BEZIG**
+# Check database status
+try:
+    db_status = get_data_source() if DATA_LAYER_AVAILABLE else "JSON Files ⚠️"
+    using_db = use_database() if DATA_LAYER_AVAILABLE else False
+except:
+    db_status = "Checking..."
+    using_db = False
 
-Je Trading Journal wordt gemigreerd naar een **PostgreSQL database** voor permanente data opslag!
-
-**Wat betekent dit:**
-- ✅ **Geen data loss meer** bij updates
-- ✅ **Veilige opslag** (niet in publieke repository)
-- ✅ **Betere performance**
-- 📊 Je huidige data wordt automatisch gemigreerd
-
-**LET OP:** Tijdens de migratie kunnen sommige functies tijdelijk niet werken. We zijn zo terug! 🚀
-""")
-
-st.info("💾 **Status:** Database setup in uitvoering... Export je data als backup via '📊 All Trades' → '📥 Export'")
+if using_db:
+    st.success(f"""
+    ✅ **DATABASE MIGRATIE SUCCESVOL!**
+    
+    Je Trading Journal gebruikt nu **PostgreSQL** voor data opslag!
+    
+    **Voordelen:**
+    - ✅ **Geen data loss meer** bij updates
+    - ✅ **Veilige opslag** (niet in publieke repository)  
+    - ✅ **Betere performance & schaalbaarheid**
+    - 📊 Data source: **{db_status}**
+    """)
+else:
+    st.warning("""
+    ⚠️ **DATABASE MIGRATIE BEZIG**
+    
+    Je Trading Journal wordt gemigreerd naar een **PostgreSQL database** voor permanente data opslag!
+    
+    **Wat betekent dit:**
+    - ✅ **Geen data loss meer** bij updates
+    - ✅ **Veilige opslag** (niet in publieke repository)
+    - ✅ **Betere performance**
+    - 📊 Je huidige data wordt automatisch gemigreerd
+    
+    **LET OP:** Tijdens de migratie kunnen sommige functies tijdelijk niet werken. We zijn zo terug! 🚀
+    """)
+    
+    st.info("💾 **Status:** Database setup in uitvoering... Export je data als backup via '📊 All Trades' → '📥 Export'")
 
 st.write("")
 
