@@ -13,6 +13,13 @@ try:
 except Exception as e:
     ANALYTICS_AVAILABLE = False
 
+# Import alerts module
+try:
+    from alerts import check_all_alerts, get_alert_summary, DEFAULT_THRESHOLDS
+    ALERTS_AVAILABLE = True
+except Exception as e:
+    ALERTS_AVAILABLE = False
+
 # Import data layer (handles Database or JSON fallback)
 try:
     from data_layer import (
@@ -1165,6 +1172,31 @@ else:
     """)
     
     st.info("💾 **Status:** Database setup in uitvoering... Export je data als backup via '📊 All Trades' → '📥 Export'")
+
+st.write("")
+
+# ===== RISK ALERTS SYSTEM =====
+if ALERTS_AVAILABLE and len(trades) >= 5:
+    # Check for active alerts
+    active_alerts = check_all_alerts(trades, DEFAULT_THRESHOLDS, account_size=10000)
+    
+    if active_alerts:
+        # Separate by severity
+        critical_alerts = [a for a in active_alerts if a.severity == "CRITICAL"]
+        warning_alerts = [a for a in active_alerts if a.severity == "WARNING"]
+        
+        # Display critical alerts
+        if critical_alerts:
+            for alert in critical_alerts:
+                st.error(alert.message)
+        
+        # Display warnings in expandable section
+        if warning_alerts:
+            with st.expander(f"⚠️ {len(warning_alerts)} Warning(s) - Click to view", expanded=False):
+                for alert in warning_alerts:
+                    st.warning(alert.message)
+        
+        st.divider()
 
 st.write("")
 
