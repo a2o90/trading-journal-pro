@@ -1724,7 +1724,7 @@ with st.sidebar:
             key="selected_account"
         )
         selected_account = accounts[selected_account_idx]
-        account_size = selected_account['size']
+        account_size = float(selected_account['size'])
         
         st.success(f"✅ Active: **{selected_account['name']}**")
         st.metric("Account Size", f"{currency}{account_size:,.0f}")
@@ -1774,7 +1774,7 @@ with st.sidebar:
             with col2:
                 new_size = st.number_input(
                     "Account Size",
-                    value=acc['size'],
+                    value=float(acc['size']),
                     min_value=100,
                     step=1000,
                     key=f"resize_{acc['id']}"
@@ -3807,7 +3807,7 @@ if trades:
                     st.warning("📊 Add at least 10 trades to generate Risk Management Report")
                 else:
                     # Calculate current balance
-                    account_size = 10000  # Default
+                    account_size = 10000.0  # Default
                     current_balance = account_size + sum(t['pnl'] for t in trades)
                     
                     report = get_risk_management_report(trades, account_size, current_balance)
