@@ -1738,7 +1738,7 @@ with st.sidebar:
     with st.expander("➕ Nieuw Add Account"):
         with st.form("add_account_form"):
             new_account_name = st.text_input("Account Name", placeholder="e.g. Futures Account")
-            new_account_size = st.number_input("Account Size ($)", value=10000, min_value=100, step=1000)
+            new_account_size = st.number_input("Account Size ($)", value=10000.0, min_value=100.0, step=1000.0)
             
             if st.form_submit_button("Add Account"):
                 if new_account_name:
@@ -1772,11 +1772,17 @@ with st.sidebar:
                 )
             
             with col2:
+                # Ensure account size is a proper float
+                try:
+                    size_value = float(acc['size'])
+                except (ValueError, TypeError):
+                    size_value = 10000.0
+                
                 new_size = st.number_input(
                     "Account Size",
-                    value=float(acc['size']),
-                    min_value=100,
-                    step=1000,
+                    value=size_value,
+                    min_value=100.0,
+                    step=1000.0,
                     key=f"resize_{acc['id']}"
                 )
             
