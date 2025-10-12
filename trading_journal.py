@@ -1034,79 +1034,72 @@ with header_col3:
 
 st.write("")
 
-# ===== QUOTES SLIDER WITH AUTO-ROTATION =====
+# ===== QUOTES SLIDER WITH MANUAL ROTATION =====
 quotes = load_quotes()
 active_quotes = [q for q in quotes if q.get('active', True)]
 if active_quotes:
-    import time
+    import random
     
-    # Initialize quote index and last rotation time if not present
+    # Initialize quote index if not present
     if 'current_quote_idx' not in st.session_state:
-        st.session_state['current_quote_idx'] = 0
-    if 'last_quote_rotation' not in st.session_state:
-        st.session_state['last_quote_rotation'] = time.time()
-    
-    # Check if 30 seconds have passed since last rotation
-    current_time = time.time()
-    time_elapsed = current_time - st.session_state.get('last_quote_rotation', current_time)
-    
-    if time_elapsed >= 30:  # 30 seconds
-        # Rotate to next quote
-        st.session_state['current_quote_idx'] = (st.session_state['current_quote_idx'] + 1) % len(active_quotes)
-        st.session_state['last_quote_rotation'] = current_time
-        st.rerun()
+        st.session_state['current_quote_idx'] = random.randint(0, len(active_quotes) - 1)
     
     # Get current quote
     quote_idx = st.session_state['current_quote_idx'] % len(active_quotes)
     current_quote = active_quotes[quote_idx]
     
-    # Display sliding quote banner
-    st.markdown(f"""
-    <style>
-        @keyframes slideIn {{
-            from {{ transform: translateX(-100%); opacity: 0; }}
-            to {{ transform: translateX(0); opacity: 1; }}
-        }}
-        .quote-banner {{
-            background: linear-gradient(135deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 136, 255, 0.1) 100%);
-            border-left: 4px solid #00ff88;
-            padding: 15px 20px;
-            border-radius: 8px;
-            margin: 10px 0 20px 0;
-            animation: slideIn 0.8s ease-out;
-            box-shadow: 0 2px 8px rgba(0, 255, 136, 0.2);
-        }}
-        .quote-text {{
-            font-size: 16px;
-            font-style: italic;
-            margin: 0;
-            color: #e0e0e0;
-        }}
-        .quote-author {{
-            font-size: 14px;
-            text-align: right;
-            margin-top: 8px;
-            color: #00ff88;
-            font-weight: 600;
-        }}
-    </style>
-    <div class="quote-banner">
-        <p class="quote-text">"{current_quote['text']}"</p>
-        <p class="quote-author">— {current_quote.get('author', 'Trading Wisdom')}</p>
-    </div>
-    """, unsafe_allow_html=True)
+    # Create columns for quote and navigation
+    quote_col, btn_col = st.columns([5, 1])
     
-    # Auto-refresh page after remaining time to show next quote
-    time_remaining = max(1, int(30 - time_elapsed))
+    with quote_col:
+        # Display sliding quote banner
+        st.markdown(f"""
+        <style>
+            @keyframes slideIn {{
+                from {{ transform: translateX(-100%); opacity: 0; }}
+                to {{ transform: translateX(0); opacity: 1; }}
+            }}
+            .quote-banner {{
+                background: linear-gradient(135deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 136, 255, 0.1) 100%);
+                border-left: 4px solid #00ff88;
+                padding: 15px 20px;
+                border-radius: 8px;
+                margin: 10px 0 20px 0;
+                animation: slideIn 0.8s ease-out;
+                box-shadow: 0 2px 8px rgba(0, 255, 136, 0.2);
+            }}
+            .quote-text {{
+                font-size: 16px;
+                font-style: italic;
+                margin: 0;
+                color: #e0e0e0;
+            }}
+            .quote-author {{
+                font-size: 14px;
+                text-align: right;
+                margin-top: 8px;
+                color: #00ff88;
+                font-weight: 600;
+            }}
+        </style>
+        <div class="quote-banner">
+            <p class="quote-text">"{current_quote['text']}"</p>
+            <p class="quote-author">— {current_quote.get('author', 'Trading Wisdom')}</p>
+        </div>
+        """, unsafe_allow_html=True)
     
-    # Add meta refresh to auto-reload page
-    st.markdown(f"""
-    <meta http-equiv="refresh" content="{time_remaining}">
-    """, unsafe_allow_html=True)
+    with btn_col:
+        # Show next quote button if there are multiple quotes
+        if len(active_quotes) > 1:
+            st.write("")
+            st.write("")
+            if st.button("🔄", key="rotate_quote", help="Next quote"):
+                st.session_state['current_quote_idx'] = (st.session_state['current_quote_idx'] + 1) % len(active_quotes)
+                st.rerun()
     
-    # Display rotation indicator
+    # Display quote counter
     if len(active_quotes) > 1:
-        st.caption(f"💬 Next quote in {time_remaining}s | Quote {quote_idx + 1}/{len(active_quotes)}")
+        st.caption(f"💬 Quote {quote_idx + 1} of {len(active_quotes)} • Click 🔄 for next")
 
 # ===== 15-MINUTE MINDSET CHECK-IN SYSTEM =====
 # Initialize check-in state
