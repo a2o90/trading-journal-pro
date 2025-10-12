@@ -1096,17 +1096,17 @@ if active_quotes:
     </div>
     """, unsafe_allow_html=True)
     
-    # Schedule next rotation using Streamlit's experimental fragment feature
-    # This ensures the page auto-refreshes after 30 seconds
-    time_remaining = 30 - time_elapsed
-    if time_remaining > 0:
-        st.markdown(f"""
-        <script>
-            setTimeout(function() {{
-                window.location.reload();
-            }}, {int(time_remaining * 1000)});
-        </script>
-        """, unsafe_allow_html=True)
+    # Auto-refresh page after remaining time to show next quote
+    time_remaining = max(1, int(30 - time_elapsed))
+    
+    # Add meta refresh to auto-reload page
+    st.markdown(f"""
+    <meta http-equiv="refresh" content="{time_remaining}">
+    """, unsafe_allow_html=True)
+    
+    # Display rotation indicator
+    if len(active_quotes) > 1:
+        st.caption(f"💬 Next quote in {time_remaining}s | Quote {quote_idx + 1}/{len(active_quotes)}")
 
 # ===== 15-MINUTE MINDSET CHECK-IN SYSTEM =====
 # Initialize check-in state
@@ -1282,6 +1282,43 @@ with st.sidebar:
             settings['dark_mode'] = False
             save_settings(settings)
             st.rerun()
+    
+    st.divider()
+    
+    # ==== NAVIGATION MENU ====
+    st.header("📍 Navigation")
+    
+    # Create navigation options
+    nav_options = [
+        "📝 Add Trade",
+        "📊 All Trades", 
+        "📅 Calendar",
+        "💰 Per Symbol",
+        "🧠 Psychology",
+        "📔 Daily Journal",
+        "🎬 Trade Replay",
+        "👨‍🏫 Mentor Mode",
+        "❌ Mistakes",
+        "🛡️ Avoided Trades",
+        "📋 Pre-Trade Plan",
+        "💬 Admin Quotes"
+    ]
+    
+    # Initialize session state for navigation
+    if 'current_page' not in st.session_state:
+        st.session_state['current_page'] = "📝 Add Trade"
+    
+    # Navigation menu
+    selected_page = st.radio(
+        "Select Page:",
+        nav_options,
+        index=nav_options.index(st.session_state['current_page']),
+        key="nav_radio",
+        label_visibility="collapsed"
+    )
+    
+    # Update current page
+    st.session_state['current_page'] = selected_page
     
     st.divider()
     
@@ -1678,42 +1715,6 @@ with st.sidebar:
     
     st.divider()
     st.header("📊 Filters")
-
-# ==== NAVIGATION MENU (Sidebar) ====
-with st.sidebar:
-    st.markdown("---")
-    st.header("📍 Navigation")
-    
-    # Create navigation categories
-    nav_options = [
-        "📝 Add Trade",
-        "📊 All Trades", 
-        "📅 Calendar",
-        "💰 Per Symbol",
-        "🧠 Psychology",
-        "📔 Daily Journal",
-        "🎬 Trade Replay",
-        "👨‍🏫 Mentor Mode",
-        "❌ Mistakes",
-        "🛡️ Avoided Trades",
-        "📋 Pre-Trade Plan",
-        "💬 Admin Quotes"
-    ]
-    
-    # Initialize session state for navigation
-    if 'current_page' not in st.session_state:
-        st.session_state['current_page'] = "📝 Add Trade"
-    
-    # Navigation menu
-    selected_page = st.radio(
-        "Select Page:",
-        nav_options,
-        index=nav_options.index(st.session_state['current_page']),
-        key="nav_radio"
-    )
-    
-    # Update current page
-    st.session_state['current_page'] = selected_page
 
 # PAGE 1: Add New Trade
 if selected_page == "📝 Add Trade":
