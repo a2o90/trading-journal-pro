@@ -349,7 +349,7 @@ def db_save_trades(trades):
                 focus_level, stress_level, sleep_quality, pre_trade_confidence, notes
             ) VALUES (
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                %s, %s, %s, %s, %s, %s, %s, %s, %s
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
             )
             ON CONFLICT (id) DO UPDATE SET
                 symbol = EXCLUDED.symbol,
