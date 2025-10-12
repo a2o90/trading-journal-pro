@@ -1679,7 +1679,7 @@ with tab1:
             
             with col1:
                 trade_date = st.date_input("Date", value=datetime.today())
-                trade_time = st.time_input("Time", value=datetime.now().time(), help="Tijd van entry")
+                trade_time = st.time_input("Time", value=datetime.now().time(), step=60, help="Tijd van entry (op de minuut)")
                 symbol = st.text_input("Symbol/Pair", placeholder="e.g. MNQ, AAPL")
                 side = st.selectbox("Side", ["Long", "Short"])
                 trade_type = st.selectbox("Trade Type", ["Daytrade", "Swing", "Scalping", "Position"])
@@ -2121,7 +2121,10 @@ with tab11:
 with tab12:
     st.header("💬 Quotes Management")
     
-    if current_user['username'] == 'admin':
+    # Check if user is admin (by username or ID)
+    is_admin = current_user['username'] == 'admin' or current_user.get('id') == 0
+    
+    if is_admin:
         st.markdown("Beheer inspirerende quotes die voor alle gebruikers zichtbaar zijn.")
         
         # Load quotes
