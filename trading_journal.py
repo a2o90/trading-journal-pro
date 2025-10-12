@@ -1034,6 +1034,25 @@ with header_col3:
 
 st.write("")
 
+# ===== DATABASE MIGRATION NOTICE =====
+st.warning("""
+⚠️ **DATABASE MIGRATIE BEZIG**
+
+Je Trading Journal wordt gemigreerd naar een **PostgreSQL database** voor permanente data opslag!
+
+**Wat betekent dit:**
+- ✅ **Geen data loss meer** bij updates
+- ✅ **Veilige opslag** (niet in publieke repository)
+- ✅ **Betere performance**
+- 📊 Je huidige data wordt automatisch gemigreerd
+
+**LET OP:** Tijdens de migratie kunnen sommige functies tijdelijk niet werken. We zijn zo terug! 🚀
+""")
+
+st.info("💾 **Status:** Database setup in uitvoering... Export je data als backup via '📊 All Trades' → '📥 Export'")
+
+st.write("")
+
 # ===== QUOTES SLIDER WITH MANUAL ROTATION =====
 quotes = load_quotes()
 active_quotes = [q for q in quotes if q.get('active', True)]
