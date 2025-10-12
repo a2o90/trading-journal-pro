@@ -51,6 +51,13 @@ try:
 except Exception as e:
     ANALYTICS_AVAILABLE = False
 
+# Import AI Assistant module
+try:
+    from ai_assistant import get_daily_summary, analyze_patterns, get_strategy_suggestions, get_weekly_report
+    AI_ASSISTANT_AVAILABLE = True
+except Exception as e:
+    AI_ASSISTANT_AVAILABLE = False
+
 # Import alerts module
 try:
     from alerts import check_all_alerts, get_alert_summary, DEFAULT_THRESHOLDS
@@ -1539,6 +1546,7 @@ with st.sidebar:
         "💰 Per Symbol",
         "🧠 Psychology",
         "🔬 Advanced Analytics",
+        "🤖 AI Assistant",
         "🎯 Risk Calculator",
         "📔 Daily Journal",
         "🎬 Trade Replay",
@@ -3781,6 +3789,287 @@ if trades:
                         st.write("**Setup Statistics:**")
                         if analysis['setups_symbols']['setup_analysis']:
                             st.json(analysis['setups_symbols']['setup_analysis'])
+    
+    # PAGE: AI Assistant
+    if selected_page == "🤖 AI Assistant":
+        st.header("🤖 AI Trading Assistant")
+        st.info("💡 Get intelligent insights, daily summaries, and strategy optimization suggestions")
+        
+        if not AI_ASSISTANT_AVAILABLE:
+            st.error("❌ AI Assistant module not available")
+        elif len(trades) < 5:
+            st.warning("📊 Add at least 5 trades to unlock AI Assistant features")
+        else:
+            st.success(f"✅ AI Assistant ready! Analyzing {len(trades)} trades...")
+            
+            # Create tabs for different AI features
+            tab1, tab2, tab3, tab4 = st.tabs(["📅 Daily Summary", "🔍 Pattern Analysis", "💡 Strategy Suggestions", "📊 Weekly Report"])
+            
+            with tab1:
+                st.subheader("📅 Daily Trading Summary")
+                st.write("Get AI-powered insights about your daily trading performance")
+                
+                # Date selector for daily summary
+                col1, col2 = st.columns([2, 1])
+                
+                with col1:
+                    selected_date = st.date_input(
+                        "Select Date",
+                        value=datetime.now().date(),
+                        max_value=datetime.now().date(),
+                        help="Choose a date to analyze"
+                    )
+                
+                with col2:
+                    if st.button("🔄 Generate Summary", type="primary", use_container_width=True):
+                        st.session_state['generate_daily_summary'] = True
+                
+                if st.session_state.get('generate_daily_summary', False):
+                    with st.spinner("🤖 AI is analyzing your trades..."):
+                        try:
+                            daily_summary = get_daily_summary(trades, selected_date.strftime('%Y-%m-%d'))
+                            
+                            # Display summary
+                            st.markdown(f"### 📊 {daily_summary['date']} Summary")
+                            st.markdown(daily_summary['summary'])
+                            
+                            # Display stats
+                            if daily_summary['stats']:
+                                col1, col2, col3, col4 = st.columns(4)
+                                with col1:
+                                    st.metric("Total Trades", daily_summary['stats']['total_trades'])
+                                with col2:
+                                    st.metric("Total P&L", f"€{daily_summary['stats']['total_pnl']:.2f}")
+                                with col3:
+                                    st.metric("Win Rate", f"{daily_summary['stats']['win_rate']:.1f}%")
+                                with col4:
+                                    st.metric("Best Trade", f"€{daily_summary['stats']['best_trade']:.2f}")
+                            
+                            # Display insights
+                            if daily_summary['insights']:
+                                st.subheader("🧠 AI Insights")
+                                for insight in daily_summary['insights']:
+                                    st.info(insight)
+                            
+                            # Display recommendations
+                            if daily_summary['recommendations']:
+                                st.subheader("💡 AI Recommendations")
+                                for rec in daily_summary['recommendations']:
+                                    st.warning(rec)
+                            
+                        except Exception as e:
+                            st.error(f"Error generating summary: {str(e)}")
+                        finally:
+                            st.session_state['generate_daily_summary'] = False
+            
+            with tab2:
+                st.subheader("🔍 Trading Pattern Analysis")
+                st.write("Discover patterns in your trading behavior and performance")
+                
+                col1, col2 = st.columns([2, 1])
+                
+                with col1:
+                    analysis_days = st.slider(
+                        "Analysis Period (days)",
+                        min_value=7,
+                        max_value=90,
+                        value=30,
+                        help="How many days back to analyze"
+                    )
+                
+                with col2:
+                    if st.button("🔍 Analyze Patterns", type="primary", use_container_width=True):
+                        st.session_state['analyze_patterns'] = True
+                
+                if st.session_state.get('analyze_patterns', False):
+                    with st.spinner("🔍 AI is analyzing patterns..."):
+                        try:
+                            patterns = analyze_patterns(trades, analysis_days)
+                            
+                            if 'error' in patterns:
+                                st.error(patterns['error'])
+                            else:
+                                # Day of week analysis
+                                if 'day_of_week' in patterns:
+                                    st.subheader("📅 Performance by Day of Week")
+                                    
+                                    dow_data = []
+                                    for day, stats in patterns['day_of_week'].items():
+                                        dow_data.append({
+                                            'Day': day,
+                                            'Total P&L': stats['total_pnl'],
+                                            'Avg P&L': stats['avg_pnl'],
+                                            'Trades': stats['trade_count'],
+                                            'Win Rate': f"{stats['win_rate']:.1f}%"
+                                        })
+                                    
+                                    if dow_data:
+                                        dow_df = pd.DataFrame(dow_data)
+                                        st.dataframe(dow_df, use_container_width=True)
+                                        
+                                        # Best and worst days
+                                        best_day = max(patterns['day_of_week'].items(), key=lambda x: x[1]['total_pnl'])
+                                        worst_day = min(patterns['day_of_week'].items(), key=lambda x: x[1]['total_pnl'])
+                                        
+                                        col1, col2 = st.columns(2)
+                                        with col1:
+                                            st.success(f"🏆 **Best Day**: {best_day[0]} (€{best_day[1]['total_pnl']:.2f})")
+                                        with col2:
+                                            st.error(f"⚠️ **Worst Day**: {worst_day[0]} (€{worst_day[1]['total_pnl']:.2f})")
+                                
+                                # Symbol analysis
+                                if 'symbols' in patterns:
+                                    st.subheader("💰 Performance by Symbol")
+                                    
+                                    symbol_data = []
+                                    for symbol, stats in patterns['symbols'].items():
+                                        symbol_data.append({
+                                            'Symbol': symbol,
+                                            'Total P&L': stats['total_pnl'],
+                                            'Avg P&L': stats['avg_pnl'],
+                                            'Trades': stats['trade_count'],
+                                            'Win Rate': f"{stats['win_rate']:.1f}%"
+                                        })
+                                    
+                                    if symbol_data:
+                                        symbol_df = pd.DataFrame(symbol_data)
+                                        symbol_df = symbol_df.sort_values('Total P&L', ascending=False)
+                                        st.dataframe(symbol_df, use_container_width=True)
+                                
+                                # Psychology analysis
+                                if 'psychology' in patterns:
+                                    st.subheader("🧠 Performance by Mood")
+                                    
+                                    mood_data = []
+                                    for mood, stats in patterns['psychology'].items():
+                                        mood_data.append({
+                                            'Mood': mood,
+                                            'Total P&L': stats['total_pnl'],
+                                            'Avg P&L': stats['avg_pnl'],
+                                            'Trades': stats['trade_count'],
+                                            'Win Rate': f"{stats['win_rate']:.1f}%"
+                                        })
+                                    
+                                    if mood_data:
+                                        mood_df = pd.DataFrame(mood_data)
+                                        mood_df = mood_df.sort_values('Total P&L', ascending=False)
+                                        st.dataframe(mood_df, use_container_width=True)
+                        
+                        except Exception as e:
+                            st.error(f"Error analyzing patterns: {str(e)}")
+                        finally:
+                            st.session_state['analyze_patterns'] = False
+            
+            with tab3:
+                st.subheader("💡 Strategy Optimization Suggestions")
+                st.write("Get AI-powered recommendations to improve your trading strategy")
+                
+                col1, col2 = st.columns([2, 1])
+                
+                with col1:
+                    suggestion_days = st.slider(
+                        "Analysis Period for Suggestions",
+                        min_value=7,
+                        max_value=90,
+                        value=30,
+                        help="How many days back to analyze for suggestions"
+                    )
+                
+                with col2:
+                    if st.button("💡 Get Suggestions", type="primary", use_container_width=True):
+                        st.session_state['get_suggestions'] = True
+                
+                if st.session_state.get('get_suggestions', False):
+                    with st.spinner("💡 AI is generating suggestions..."):
+                        try:
+                            suggestions = get_strategy_suggestions(trades, suggestion_days)
+                            
+                            if suggestions:
+                                # Group suggestions by priority
+                                high_priority = [s for s in suggestions if s.get('priority') == 'high']
+                                medium_priority = [s for s in suggestions if s.get('priority') == 'medium']
+                                low_priority = [s for s in suggestions if s.get('priority') == 'low']
+                                
+                                if high_priority:
+                                    st.subheader("🔴 High Priority")
+                                    for sug in high_priority:
+                                        if sug['type'] == 'warning':
+                                            st.error(f"**{sug['title']}**")
+                                        else:
+                                            st.warning(f"**{sug['title']}**")
+                                        st.write(sug['message'])
+                                        st.divider()
+                                
+                                if medium_priority:
+                                    st.subheader("🟡 Medium Priority")
+                                    for sug in medium_priority:
+                                        st.info(f"**{sug['title']}**")
+                                        st.write(sug['message'])
+                                        st.divider()
+                                
+                                if low_priority:
+                                    st.subheader("🟢 Low Priority")
+                                    for sug in low_priority:
+                                        st.success(f"**{sug['title']}**")
+                                        st.write(sug['message'])
+                                        st.divider()
+                            else:
+                                st.info("No specific suggestions at this time. Keep trading consistently!")
+                        
+                        except Exception as e:
+                            st.error(f"Error generating suggestions: {str(e)}")
+                        finally:
+                            st.session_state['get_suggestions'] = False
+            
+            with tab4:
+                st.subheader("📊 Weekly AI Report")
+                st.write("Comprehensive weekly analysis and insights")
+                
+                if st.button("📊 Generate Weekly Report", type="primary", use_container_width=True):
+                    st.session_state['generate_weekly_report'] = True
+                
+                if st.session_state.get('generate_weekly_report', False):
+                    with st.spinner("📊 AI is generating weekly report..."):
+                        try:
+                            weekly_report = get_weekly_report(trades)
+                            
+                            # Display summary
+                            st.markdown(f"### 📈 Weekly Summary")
+                            st.markdown(weekly_report['summary'])
+                            
+                            # Display stats
+                            if weekly_report['stats']:
+                                col1, col2, col3, col4 = st.columns(4)
+                                with col1:
+                                    st.metric("Total P&L", f"€{weekly_report['stats']['total_pnl']:.2f}")
+                                with col2:
+                                    st.metric("Total Trades", weekly_report['stats']['total_trades'])
+                                with col3:
+                                    st.metric("Win Rate", f"{weekly_report['stats']['win_rate']:.1f}%")
+                                with col4:
+                                    st.metric("Win Count", weekly_report['stats']['win_count'])
+                            
+                            # Display insights
+                            if weekly_report['insights']:
+                                st.subheader("🧠 Weekly Insights")
+                                for insight in weekly_report['insights']:
+                                    st.info(insight)
+                            
+                            # Display recommendations
+                            if weekly_report['recommendations']:
+                                st.subheader("💡 Weekly Recommendations")
+                                for rec in weekly_report['recommendations']:
+                                    if rec.get('priority') == 'high':
+                                        st.error(f"**{rec['title']}**: {rec['message']}")
+                                    elif rec.get('priority') == 'medium':
+                                        st.warning(f"**{rec['title']}**: {rec['message']}")
+                                    else:
+                                        st.info(f"**{rec['title']}**: {rec['message']}")
+                        
+                        except Exception as e:
+                            st.error(f"Error generating weekly report: {str(e)}")
+                        finally:
+                            st.session_state['generate_weekly_report'] = False
     
     # PAGE: Risk Calculator
     if selected_page == "🎯 Risk Calculator":
