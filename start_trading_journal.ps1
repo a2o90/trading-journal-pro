@@ -9,8 +9,8 @@ Write-Host ""
 Write-Host "Starting Keep-Alive System..." -ForegroundColor Green
 Start-Process -FilePath "python" -ArgumentList "keep_awake.py" -WindowStyle Minimized
 
-Write-Host "Waiting 3 seconds for keep-alive to initialize..." -ForegroundColor Yellow
-Start-Sleep -Seconds 3
+Write-Host "Waiting 5 seconds for keep-alive to initialize..." -ForegroundColor Yellow
+Start-Sleep -Seconds 5
 
 Write-Host "Starting Trading Journal Pro..." -ForegroundColor Green
 Write-Host ""
@@ -28,6 +28,9 @@ Write-Host "Stopping Keep-Alive System..." -ForegroundColor Yellow
 Get-Process -Name "python" -ErrorAction SilentlyContinue | Where-Object {
     $_.MainWindowTitle -like "*Keep-Alive*"
 } | Stop-Process -Force -ErrorAction SilentlyContinue
+
+Write-Host "Restoring sleep settings..." -ForegroundColor Yellow
+& powercfg /change standby-timeout-ac 30
 
 Write-Host ""
 Write-Host "Trading Journal Pro stopped." -ForegroundColor Red

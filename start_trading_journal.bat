@@ -7,8 +7,8 @@ echo.
 echo Starting Keep-Alive System...
 start "Keep-Alive" python keep_awake.py
 
-echo Waiting 3 seconds for keep-alive to initialize...
-timeout /t 3 /nobreak >nul
+echo Waiting 5 seconds for keep-alive to initialize...
+timeout /t 5 /nobreak >nul
 
 echo Starting Trading Journal Pro...
 echo.
@@ -21,6 +21,10 @@ streamlit run trading_journal.py --server.headless true --server.port 8501
 echo.
 echo Stopping Keep-Alive System...
 taskkill /f /im python.exe /fi "WINDOWTITLE eq Keep-Alive*" >nul 2>&1
+
+echo.
+echo Restoring sleep settings...
+powercfg /change standby-timeout-ac 30 >nul 2>&1
 
 echo.
 echo Trading Journal Pro stopped.
