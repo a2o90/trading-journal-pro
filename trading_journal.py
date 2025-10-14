@@ -8,6 +8,13 @@ import calendar as cal
 import numpy as np
 from collections import defaultdict
 
+# Import price action calendar module
+try:
+    from price_action_calendar import display_weekly_price_action_calendar
+    PRICE_ACTION_AVAILABLE = True
+except ImportError:
+    PRICE_ACTION_AVAILABLE = False
+
 def safe_plot(data, title, xlabel, ylabel, ax=None):
     """Safely plot data with error handling"""
     try:
@@ -1608,6 +1615,7 @@ with st.sidebar:
         "📊 All Trades", 
         "📅 Calendar",
         "💰 Per Symbol",
+        "📈 Weekly Price Action",
         "🧠 Psychology",
         "🔬 Advanced Analytics",
         "🤖 AI Assistant",
@@ -3336,6 +3344,17 @@ if trades:
                             st.rerun()
         else:
             st.info(f"No trades found for {selected_symbol}")
+
+    # PAGE: Weekly Price Action Calendar
+    if selected_page == "📈 Weekly Price Action":
+        if PRICE_ACTION_AVAILABLE:
+            display_weekly_price_action_calendar()
+        else:
+            st.header("📈 Weekly Price Action Calendar")
+            st.error("❌ Price Action Calendar module not available")
+            st.info("💡 This feature requires additional dependencies. Please install them:")
+            st.code("pip install yfinance plotly", language="bash")
+            st.info("🔄 After installation, restart the application to use this feature.")
 
     # PAGE: Psychology Analysis
     if selected_page == "🧠 Psychology":
