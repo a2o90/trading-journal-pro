@@ -172,7 +172,7 @@ ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
 
 # App Version
 APP_VERSION = "3.1.0"
-LAST_UPDATE = "15-10-2025 01:34:29"
+LAST_UPDATE = "15-10-2025 01:36:16"
 
 # ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
 
@@ -3380,21 +3380,28 @@ if trades:
                     
                     # Check if we have numeric data to plot
                     if not mood_stats.empty and mood_stats['Total P&L'].notna().any():
-                        # Create bar chart for mood
-                        fig, ax = plt.subplots(figsize=(10, 5))
-                        colors = ['#00ff88' if x > 0 else '#ff4444' for x in mood_stats['Total P&L']]
-                        mood_stats['Total P&L'].plot(kind='bar', ax=ax, color=colors, edgecolor='white', linewidth=1.5)
-                        ax.axhline(y=0, color='white', linewidth=1)
-                        ax.set_xlabel('Mood', fontsize=12)
-                        ax.set_ylabel('Total P&L ($)', fontsize=12)
-                        ax.set_title('Profitability per Mood', fontsize=14, fontweight='bold')
-                        ax.grid(True, alpha=0.3, axis='y')
-                        plt.xticks(rotation=45)
-                        plt.tight_layout()
-                        st.pyplot(fig)
+                        # Filter out NaN values and ensure we have numeric data
+                        mood_stats_clean = mood_stats.dropna(subset=['Total P&L'])
                         
-                        # Display mood statistics table
-                        st.dataframe(mood_stats, use_container_width=True)
+                        if not mood_stats_clean.empty and mood_stats_clean['Total P&L'].dtype in ['float64', 'int64']:
+                            # Create bar chart for mood
+                            fig, ax = plt.subplots(figsize=(10, 5))
+                            colors = ['#00ff88' if x > 0 else '#ff4444' for x in mood_stats_clean['Total P&L']]
+                            mood_stats_clean['Total P&L'].plot(kind='bar', ax=ax, color=colors, edgecolor='white', linewidth=1.5)
+                            ax.axhline(y=0, color='white', linewidth=1)
+                            ax.set_xlabel('Mood', fontsize=12)
+                            ax.set_ylabel('Total P&L ($)', fontsize=12)
+                            ax.set_title('Profitability per Mood', fontsize=14, fontweight='bold')
+                            ax.grid(True, alpha=0.3, axis='y')
+                            plt.xticks(rotation=45)
+                            plt.tight_layout()
+                            st.pyplot(fig)
+                            
+                            # Display mood statistics table
+                            st.dataframe(mood_stats_clean, use_container_width=True)
+                        else:
+                            st.warning("⚠️ No valid mood data available for analysis")
+                            st.info("💡 Add mood information to your trades to see psychological analysis")
                     else:
                         st.warning("⚠️ No mood data available for analysis")
                         st.info("💡 Add mood information to your trades to see psychological analysis")
