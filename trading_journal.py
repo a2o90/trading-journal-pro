@@ -172,7 +172,7 @@ ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
 
 # App Version
 APP_VERSION = "3.1.0"
-LAST_UPDATE = "15-10-2025 01:31:31"
+LAST_UPDATE = "15-10-2025 01:34:29"
 
 # ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
 
@@ -3369,26 +3369,38 @@ if trades:
             
             with col1:
                 st.subheader("📊 Performance by Mood")
-                mood_stats = df.groupby('mood').agg({
-                    'pnl': ['sum', 'mean', 'count']
-                }).round(2)
-                mood_stats.columns = ['Total P&L', 'Avg P&L', 'Number of trades']
-                mood_stats = mood_stats.sort_values('Total P&L', ascending=False)
                 
-                # Create bar chart for mood
-                fig, ax = plt.subplots(figsize=(10, 5))
-                colors = ['#00ff88' if x > 0 else '#ff4444' for x in mood_stats['Total P&L']]
-                mood_stats['Total P&L'].plot(kind='bar', ax=ax, color=colors, edgecolor='white', linewidth=1.5)
-                ax.axhline(y=0, color='white', linewidth=1)
-                ax.set_xlabel('Mood', fontsize=12)
-                ax.set_ylabel('Total P&L ($)', fontsize=12)
-                ax.set_title('Profitability per Mood', fontsize=14, fontweight='bold')
-                ax.grid(True, alpha=0.3, axis='y')
-                plt.xticks(rotation=45)
-                plt.tight_layout()
-                st.pyplot(fig)
-                
-                st.dataframe(mood_stats, use_container_width=True)
+                # Check if mood data exists and has numeric values
+                if 'mood' in df.columns and not df['mood'].isna().all():
+                    mood_stats = df.groupby('mood').agg({
+                        'pnl': ['sum', 'mean', 'count']
+                    }).round(2)
+                    mood_stats.columns = ['Total P&L', 'Avg P&L', 'Number of trades']
+                    mood_stats = mood_stats.sort_values('Total P&L', ascending=False)
+                    
+                    # Check if we have numeric data to plot
+                    if not mood_stats.empty and mood_stats['Total P&L'].notna().any():
+                        # Create bar chart for mood
+                        fig, ax = plt.subplots(figsize=(10, 5))
+                        colors = ['#00ff88' if x > 0 else '#ff4444' for x in mood_stats['Total P&L']]
+                        mood_stats['Total P&L'].plot(kind='bar', ax=ax, color=colors, edgecolor='white', linewidth=1.5)
+                        ax.axhline(y=0, color='white', linewidth=1)
+                        ax.set_xlabel('Mood', fontsize=12)
+                        ax.set_ylabel('Total P&L ($)', fontsize=12)
+                        ax.set_title('Profitability per Mood', fontsize=14, fontweight='bold')
+                        ax.grid(True, alpha=0.3, axis='y')
+                        plt.xticks(rotation=45)
+                        plt.tight_layout()
+                        st.pyplot(fig)
+                        
+                        # Display mood statistics table
+                        st.dataframe(mood_stats, use_container_width=True)
+                    else:
+                        st.warning("⚠️ No mood data available for analysis")
+                        st.info("💡 Add mood information to your trades to see psychological analysis")
+                else:
+                    st.warning("⚠️ No mood data available for analysis")
+                    st.info("💡 Add mood information to your trades to see psychological analysis")
             
             with col2:
                 st.subheader("📌 Performance by Influence")
@@ -3399,7 +3411,7 @@ if trades:
                         'pnl': ['sum', 'mean', 'count']
                     }).round(2)
                     
-                    if len(influence_stats) > 0:
+                    if len(influence_stats) > 0 and influence_stats['pnl']['sum'].notna().any():
                         influence_stats.columns = ['Total P&L', 'Avg P&L', 'Number of trades']
                         influence_stats = influence_stats.sort_values('Total P&L', ascending=False)
                         
@@ -3427,9 +3439,11 @@ if trades:
                             best_inf_pnl = best_influence_trades.iloc[0]['pnl']
                             st.info(f"💡 Best '{best_influence}' trade: 📅 {best_inf_date} ({currency}{best_inf_pnl:.2f})")
                     else:
-                        st.info("Add 'Influence' to your trades")
+                        st.warning("⚠️ No influence data available for analysis")
+                        st.info("💡 Add influence/reason information to your trades to see analysis")
                 else:
-                    st.info("Add 'Influence' to your trades to see which reasons work best!")
+                    st.warning("⚠️ No influence data available for analysis")
+                    st.info("💡 Add influence/reason information to your trades to see analysis")
             
             st.divider()
             
