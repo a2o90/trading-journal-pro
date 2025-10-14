@@ -172,7 +172,7 @@ ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
 
 # App Version
 APP_VERSION = "3.1.0"
-LAST_UPDATE = "15-10-2025 01:13:23"
+LAST_UPDATE = "15-10-2025 01:24:05"
 
 # ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
 
