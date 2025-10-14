@@ -171,8 +171,8 @@ MINDSET_CHECKINS_FILE = "mindset_checkins.json"
 ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
 
 # App Version
-APP_VERSION = "3.0.0"
-LAST_UPDATE = "2025-10-12"
+APP_VERSION = "3.1.0"
+LAST_UPDATE = "2025-01-27"
 
 # ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
 
@@ -254,27 +254,29 @@ def login_page():
     <div style='background: linear-gradient(135deg, rgba(0, 255, 136, 0.15) 0%, rgba(0, 136, 255, 0.15) 100%);
                 padding: 20px; border-radius: 12px; border-left: 5px solid #00ff88;
                 margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0, 255, 136, 0.2);'>
-        <h3 style='color: #00ff88; margin-top: 0;'>🚀 BELANGRIJKE UPDATE!</h3>
+        <h3 style='color: #00ff88; margin-top: 0;'>🚀 NIEUWE FEATURES v3.1.0!</h3>
         <p style='font-size: 16px; margin: 10px 0; line-height: 1.6;'>
-            <strong>Vanaf vandaag (12 oktober 2024)</strong> draait Trading Journal Pro op een 
-            <strong style='color: #00ff88;'>PostgreSQL database</strong>!
+            <strong>Weekly Price Action Calendar</strong> toegevoegd! Analyseer candlestick patterns per symbool.
         </p>
-        <p style='font-size: 15px; margin: 15px 0 10px 0;'><strong>Dit betekent:</strong></p>
+        <p style='font-size: 15px; margin: 15px 0 10px 0;'><strong>Nieuwe functionaliteiten:</strong></p>
         <ul style='margin: 5px 0 15px 20px; font-size: 14px; line-height: 1.8;'>
-            <li>✅ <strong>Geen data loss meer</strong> bij updates of redeploys</li>
-            <li>✅ <strong>Veilige opslag</strong> van al je trades en gegevens</li>
-            <li>✅ <strong>Betere performance</strong> en schaalbaarheid</li>
-            <li>✅ <strong>Professionele data bescherming</strong></li>
+            <li>📈 <strong>Weekly Price Action Calendar</strong> - Pattern analysis per symbool</li>
+            <li>❌ <strong>Mistakes Tracker</strong> - Documenteer trading fouten</li>
+            <li>🛡️ <strong>Avoided Trades</strong> - Track bewust vermeden trades</li>
+            <li>📋 <strong>Pre-Trade Planning</strong> - Plan trades vooraf</li>
+            <li>💬 <strong>Admin Quotes</strong> - Inspirerende quotes systeem</li>
+            <li>⏰ <strong>Mindset Check-ins</strong> - 15-minuten alerts</li>
+            <li>💤 <strong>Keep-Alive System</strong> - Voorkom slaapstand tijdens trading</li>
         </ul>
         <div style='background-color: rgba(255, 136, 0, 0.2); padding: 12px; border-radius: 8px; 
                     border-left: 3px solid #ff8800; margin-top: 15px;'>
             <p style='margin: 0; font-size: 14px;'>
-                ⚠️ <strong>Actie vereist:</strong> Bestaande gebruikers moeten <strong>opnieuw registreren</strong>. 
-                Je oude data is gearchiveerd, maar de nieuwe database start met een schone lei voor maximale stabiliteit.
+                🎯 <strong>Tip:</strong> Gebruik de nieuwe <strong>Weekly Price Action Calendar</strong> 
+                om market sentiment en patterns te analyseren voor betere entry/exit timing!
             </p>
         </div>
         <p style='margin: 15px 0 0 0; font-size: 13px; opacity: 0.8; text-align: center;'>
-            💾 <em>Alle nieuwe data wordt vanaf nu permanent opgeslagen in de database</em>
+            💡 <em>Alle features zijn volledig geïntegreerd en klaar voor gebruik</em>
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -309,10 +311,10 @@ def login_page():
         st.markdown("""
         <div style='background-color: rgba(38, 39, 48, 0.5); padding: 15px; border-radius: 10px; 
                     border: 1px solid rgba(0, 255, 136, 0.3); height: 180px;'>
-            <h4 style='color: #00ff88; margin-top: 0;'>🎬 Trade Replay</h4>
+            <h4 style='color: #00ff88; margin-top: 0;'>📈 Weekly Price Action</h4>
             <p style='font-size: 14px; line-height: 1.6;'>
-                Replay your trading journey chronologically. Visualize entry/exit points 
-                and see how your strategy evolved over time.
+                Analyseer weekly candlestick patterns per symbool. Real-time data via yfinance 
+                met automatische pattern classificatie en interactive charts.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -320,11 +322,11 @@ def login_page():
     with col2:
         st.markdown("""
         <div style='background-color: rgba(38, 39, 48, 0.5); padding: 15px; border-radius: 10px; 
-                    border: 1px solid rgba(0, 136, 255, 0.3); height: 180px;'>
-            <h4 style='color: #0088ff; margin-top: 0;'>👨‍🏫 Mentor Mode</h4>
+                    border: 1px solid rgba(255, 136, 0, 0.3); height: 180px;'>
+            <h4 style='color: #ff8800; margin-top: 0;'>❌ Mistakes Tracker</h4>
             <p style='font-size: 14px; line-height: 1.6;'>
-                Share your journal with coaches using a unique code. Mentors get 
-                read-only access to review your trades and provide feedback.
+                Documenteer en analyseer je trading mistakes. Wekelijks overzicht 
+                en trend analyse om patronen te herkennen en te leren.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -332,11 +334,11 @@ def login_page():
     with col3:
         st.markdown("""
         <div style='background-color: rgba(38, 39, 48, 0.5); padding: 15px; border-radius: 10px; 
-                    border: 1px solid rgba(255, 136, 0, 0.3); height: 180px;'>
-            <h4 style='color: #ff8800; margin-top: 0;'>📊 Advanced Analytics</h4>
+                    border: 1px solid rgba(0, 136, 255, 0.3); height: 180px;'>
+            <h4 style='color: #0088ff; margin-top: 0;'>💤 Keep-Alive System</h4>
             <p style='font-size: 14px; line-height: 1.6;'>
-                Max Drawdown, Sharpe Ratio, Profit Factor, Day of Week analysis, 
-                Psychology insights, and more professional metrics.
+                Voorkom dat je computer in slaapstand gaat tijdens trading sessies. 
+                Automatische sleep prevention met graceful shutdown.
             </p>
         </div>
         """, unsafe_allow_html=True)
