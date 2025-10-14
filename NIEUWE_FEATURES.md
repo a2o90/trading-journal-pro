@@ -136,22 +136,54 @@ Alle gevraagde features zijn succesvol toegevoegd aan je Trading Journal! Hier i
 
 ---
 
+## 7. 📈 Weekly Price Action Calendar
+
+**Locatie:** Tab "📈 Weekly Price Action"
+
+**Functionaliteit:**
+- Analyseer weekly candlestick patterns per symbool
+- Real-time price data fetching via yfinance
+- Automatische pattern classificatie (Bullish, Bearish, Doji, Hammer, Shooting Star)
+- Interactive charts met plotly (candlestick en bar charts)
+- Weekly calendar view met price metrics
+- Pattern analysis en insights
+- Caching systeem voor betere performance
+
+**Price Action Features:**
+- Weekly candlestick pattern recognition
+- Volatility analysis en trend bias
+- Pattern distribution charts
+- Weekly range statistics
+- Price change percentage tracking
+- Market sentiment analysis
+
+**Supported Symbols:**
+- Stocks: AAPL, MSFT, GOOGL, etc.
+- Forex: EURUSD=X, GBPUSD=X, etc.
+- Crypto: BTC-USD, ETH-USD, etc.
+- Indices: ^GSPC, ^DJI, etc.
+
+**Use Case:** Identificeer weekly trading patterns en market sentiment voor betere entry/exit timing.
+
+---
+
 ## 📊 Overzicht Nieuwe Tabs
 
-De app heeft nu **12 tabs** in totaal:
+De app heeft nu **13 tabs** in totaal:
 
 1. 📝 Add Trade
 2. 📊 All Trades
 3. 📅 Calendar
 4. 💰 Per Symbol
-5. 🧠 Psychology
-6. 📔 Daily Journal
-7. 🎬 Trade Replay
-8. 👨‍🏫 Mentor Mode
-9. **❌ Mistakes** *(NIEUW)*
-10. **🛡️ Avoided Trades** *(NIEUW)*
-11. **📋 Pre-Trade Plan** *(NIEUW)*
-12. **💬 Admin Quotes** *(NIEUW)*
+5. **📈 Weekly Price Action** *(NIEUW)*
+6. 🧠 Psychology
+7. 📔 Daily Journal
+8. 🎬 Trade Replay
+9. 👨‍🏫 Mentor Mode
+10. **❌ Mistakes** *(NIEUW)*
+11. **🛡️ Avoided Trades** *(NIEUW)*
+12. **📋 Pre-Trade Plan** *(NIEUW)*
+13. **💬 Admin Quotes** *(NIEUW)*
 
 ---
 
@@ -173,6 +205,7 @@ De volgende bestanden worden automatisch aangemaakt:
 - `pretrade_analysis.json` - Opslag van pre-trade plans
 - `quotes.json` - Opslag van quotes (met 5 default quotes)
 - `mindset_checkins.json` - Opslag van mindset check-ins
+- `weekly_price_action.json` - Cache voor price action data
 
 ---
 
@@ -238,11 +271,11 @@ streamlit run trading_journal.py
 ## 📈 Version Info
 
 - **Previous Version:** 2.4.1
-- **Current Version:** 3.0.0
-- **Update Date:** 2025-10-12
-- **New Features:** 6 major features
-- **New Tabs:** 4 nieuwe tabs
-- **New Data Files:** 5 bestanden
+- **Current Version:** 3.1.0
+- **Update Date:** 2025-01-27
+- **New Features:** 7 major features
+- **New Tabs:** 5 nieuwe tabs
+- **New Data Files:** 6 bestanden
 
 ---
 
@@ -265,6 +298,7 @@ Mogelijke verbeteringen voor de toekomst:
 - ✅ Pre-trade planning & overzichten
 - ✅ Admin quotes systeem met sliding message
 - ✅ Avoided trades journal
+- ✅ Weekly Price Action Calendar met pattern analysis
 
 **Status:** Alle features compleet en werkend! 🎉
 

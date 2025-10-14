@@ -15,6 +15,7 @@ A comprehensive trading journal application built with Streamlit to track, analy
 - **Equity Curve** - Visual representation of cumulative P&L over time
 - **Calendar View** - Monthly calendar with daily P&L visualization
 - **Per-Symbol Analysis** - Detailed breakdown by trading symbol/pair
+- **Weekly Price Action Calendar** - Analyze weekly candlestick patterns and market sentiment per symbol
 
 ### 🧠 Psychology Tracking
 - **Mental State Analysis** - Track mood, focus, stress, sleep quality
@@ -102,6 +103,8 @@ streamlit run trading_journal.py
 - **Streamlit** - Web application framework
 - **Pandas** - Data manipulation and analysis
 - **Matplotlib** - Data visualization
+- **Plotly** - Interactive charts and visualizations
+- **yfinance** - Real-time financial data
 - **Python 3.11+** - Programming language
 
 ## Contributing

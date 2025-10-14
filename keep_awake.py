@@ -1,31 +1,3 @@
-#!/bin/bash
-
-# Trading Journal Pro Setup Script
-echo "🚀 Setting up Trading Journal Pro..."
-
-# Install Python dependencies
-echo "📦 Installing dependencies..."
-pip install -r requirements.txt
-
-# Streamlit configuration for deployment
-echo "⚙️ Configuring Streamlit..."
-mkdir -p ~/.streamlit/
-
-echo "\
-[general]\n\
-email = \"your-email@example.com\"\n\
-" > ~/.streamlit/credentials.toml
-
-echo "\
-[server]\n\
-headless = true\n\
-enableCORS = false\n\
-port = \$PORT\n\
-" > ~/.streamlit/config.toml
-
-# Create keep-alive script for Windows
-echo "💤 Creating keep-alive scripts..."
-cat > keep_awake.py << 'EOF'
 #!/usr/bin/env python3
 """
 Keep System Awake Script
@@ -114,16 +86,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-EOF
-
-echo "✅ Setup complete!"
-echo ""
-echo "🚀 To start Trading Journal Pro:"
-echo "   streamlit run trading_journal.py"
-echo ""
-echo "💤 To start with keep-alive (Windows):"
-echo "   python keep_awake.py"
-echo "   (Then in another terminal: streamlit run trading_journal.py)"
-echo ""
-echo "📈 Happy Trading!"
-
