@@ -272,7 +272,7 @@ streamlit run trading_journal.py
 
 - **Previous Version:** 2.4.1
 - **Current Version:** 3.1.0
-- **Update Date:** 2025-10-27
+- **Update Date:** 2025-10-15
 - **New Features:** 7 major features
 - **New Tabs:** 5 nieuwe tabs
 - **New Data Files:** 6 bestanden
