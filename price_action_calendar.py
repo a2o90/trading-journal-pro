@@ -92,7 +92,49 @@ class ManualPriceActionManager:
             'pattern': pattern,
             'description': description,
             'added_at': datetime.now().isoformat(),
-            'manual': True
+            'manual': True,
+            'type': 'week'
+        }
+        
+        self.save_manual_data(manual_data)
+        return True
+    
+    def add_manual_day(self, symbol: str, date: str, 
+                      open_price: float, high_price: float, low_price: float, 
+                      close_price: float, pattern: str, description: str = ""):
+        """Add manual price action data for a specific day"""
+        manual_data = self.load_manual_data()
+        
+        if symbol not in manual_data:
+            manual_data[symbol] = {}
+        
+        day_key = f"day_{date}"
+        
+        # Calculate metrics
+        daily_range = high_price - low_price
+        daily_change = close_price - open_price
+        daily_change_pct = (daily_change / open_price) * 100 if open_price != 0 else 0
+        body_size = abs(close_price - open_price)
+        upper_wick = high_price - max(open_price, close_price)
+        lower_wick = min(open_price, close_price) - low_price
+        
+        manual_data[symbol][day_key] = {
+            'date': date,
+            'open': open_price,
+            'high': high_price,
+            'low': low_price,
+            'close': close_price,
+            'daily_range': daily_range,
+            'daily_change': daily_change,
+            'daily_change_pct': daily_change_pct,
+            'body_size': body_size,
+            'upper_wick': upper_wick,
+            'lower_wick': lower_wick,
+            'pattern': pattern,
+            'description': description,
+            'added_at': datetime.now().isoformat(),
+            'manual': True,
+            'type': 'day'
         }
         
         self.save_manual_data(manual_data)
@@ -106,41 +148,66 @@ class ManualPriceActionManager:
             return None
         
         weeks_data = []
-        for week_key, week_data in manual_data[symbol].items():
-            weeks_data.append({
-                'Week_Start': pd.to_datetime(week_data['week_start']),
-                'Week_End': pd.to_datetime(week_data['week_end']),
-                'Open': week_data['open'],
-                'High': week_data['high'],
-                'Low': week_data['low'],
-                'Close': week_data['close'],
-                'Weekly_Range': week_data['weekly_range'],
-                'Weekly_Change': week_data['weekly_change'],
-                'Weekly_Change_Pct': week_data['weekly_change_pct'],
-                'Body_Size': week_data['body_size'],
-                'Upper_Wick': week_data['upper_wick'],
-                'Lower_Wick': week_data['lower_wick'],
-                'Pattern': week_data['pattern'],
-                'Description': week_data['description'],
-                'Manual': True
-            })
+        days_data = []
         
-        if not weeks_data:
+        for key, data in manual_data[symbol].items():
+            if data.get('type') == 'week':
+                weeks_data.append({
+                    'Week_Start': pd.to_datetime(data['week_start']),
+                    'Week_End': pd.to_datetime(data['week_end']),
+                    'Open': data['open'],
+                    'High': data['high'],
+                    'Low': data['low'],
+                    'Close': data['close'],
+                    'Weekly_Range': data['weekly_range'],
+                    'Weekly_Change': data['weekly_change'],
+                    'Weekly_Change_Pct': data['weekly_change_pct'],
+                    'Body_Size': data['body_size'],
+                    'Upper_Wick': data['upper_wick'],
+                    'Lower_Wick': data['lower_wick'],
+                    'Pattern': data['pattern'],
+                    'Description': data['description'],
+                    'Manual': True,
+                    'Type': 'Week'
+                })
+            elif data.get('type') == 'day':
+                days_data.append({
+                    'Week_Start': pd.to_datetime(data['date']),
+                    'Week_End': pd.to_datetime(data['date']),
+                    'Open': data['open'],
+                    'High': data['high'],
+                    'Low': data['low'],
+                    'Close': data['close'],
+                    'Weekly_Range': data['daily_range'],
+                    'Weekly_Change': data['daily_change'],
+                    'Weekly_Change_Pct': data['daily_change_pct'],
+                    'Body_Size': data['body_size'],
+                    'Upper_Wick': data['upper_wick'],
+                    'Lower_Wick': data['lower_wick'],
+                    'Pattern': data['pattern'],
+                    'Description': data['description'],
+                    'Manual': True,
+                    'Type': 'Day'
+                })
+        
+        all_data = weeks_data + days_data
+        
+        if not all_data:
             return None
         
-        df = pd.DataFrame(weeks_data)
+        df = pd.DataFrame(all_data)
         df = df.sort_values('Week_Start')
         df.set_index('Week_Start', inplace=True)
         return df
     
-    def delete_manual_week(self, symbol: str, week_key: str):
-        """Delete a manual price action week"""
+    def delete_manual_entry(self, symbol: str, entry_key: str):
+        """Delete a manual price action entry (week or day)"""
         manual_data = self.load_manual_data()
         
-        if symbol in manual_data and week_key in manual_data[symbol]:
-            del manual_data[symbol][week_key]
+        if symbol in manual_data and entry_key in manual_data[symbol]:
+            del manual_data[symbol][entry_key]
             
-            # Remove symbol if no weeks left
+            # Remove symbol if no entries left
             if not manual_data[symbol]:
                 del manual_data[symbol]
             
@@ -384,13 +451,20 @@ class WeeklyPriceActionCalendar:
         st.subheader("➕ Add Manual Price Action Data")
         st.info("💡 Use this to add price action data for symbols not available in yfinance (like MNQ)")
         
+        # Choose between week or day
+        data_type = st.radio("Data Type", ["Week", "Day"], horizontal=True, key="manual_data_type")
+        
         with st.form("add_manual_data"):
             col1, col2 = st.columns(2)
             
             with col1:
                 symbol = st.text_input("Symbol", placeholder="e.g., MNQ, ES, YM", key="manual_symbol")
-                week_start = st.date_input("Week Start Date", key="manual_week_start")
-                week_end = st.date_input("Week End Date", key="manual_week_end")
+                
+                if data_type == "Week":
+                    week_start = st.date_input("Week Start Date", key="manual_week_start")
+                    week_end = st.date_input("Week End Date", key="manual_week_end")
+                else:  # Day
+                    date = st.date_input("Date", key="manual_date")
             
             with col2:
                 open_price = st.number_input("Open Price", min_value=0.0, step=0.01, format="%.2f", key="manual_open")
@@ -407,18 +481,26 @@ class WeeklyPriceActionCalendar:
                                      placeholder="Describe the price action, key levels, market sentiment, etc.", 
                                      key="manual_description")
             
-            if st.form_submit_button("➕ Add Manual Week", type="primary"):
+            if st.form_submit_button(f"➕ Add Manual {data_type}", type="primary"):
                 if symbol and open_price and high_price and low_price and close_price:
-                    success = self.manual_manager.add_manual_week(
-                        symbol, 
-                        week_start.strftime('%Y-%m-%d'), 
-                        week_end.strftime('%Y-%m-%d'),
-                        open_price, high_price, low_price, close_price,
-                        pattern, description
-                    )
+                    if data_type == "Week":
+                        success = self.manual_manager.add_manual_week(
+                            symbol, 
+                            week_start.strftime('%Y-%m-%d'), 
+                            week_end.strftime('%Y-%m-%d'),
+                            open_price, high_price, low_price, close_price,
+                            pattern, description
+                        )
+                    else:  # Day
+                        success = self.manual_manager.add_manual_day(
+                            symbol, 
+                            date.strftime('%Y-%m-%d'),
+                            open_price, high_price, low_price, close_price,
+                            pattern, description
+                        )
                     
                     if success:
-                        st.success(f"✅ Added manual price action data for {symbol}")
+                        st.success(f"✅ Added manual {data_type.lower()} data for {symbol}")
                         st.rerun()
                     else:
                         st.error("❌ Failed to add manual data")
@@ -435,29 +517,41 @@ class WeeklyPriceActionCalendar:
             st.info("📝 No manual price action data found")
             return
         
-        for symbol, weeks in manual_data.items():
-            with st.expander(f"📊 {symbol} ({len(weeks)} weeks)", expanded=False):
-                for week_key, week_data in weeks.items():
+        for symbol, entries in manual_data.items():
+            # Count weeks and days
+            weeks_count = sum(1 for entry in entries.values() if entry.get('type') == 'week')
+            days_count = sum(1 for entry in entries.values() if entry.get('type') == 'day')
+            
+            with st.expander(f"📊 {symbol} ({weeks_count} weeks, {days_count} days)", expanded=False):
+                for entry_key, entry_data in entries.items():
                     col1, col2, col3 = st.columns([3, 1, 1])
                     
                     with col1:
-                        st.write(f"**Week:** {week_data['week_start']} to {week_data['week_end']}")
-                        st.write(f"**OHLC:** {week_data['open']:.2f} / {week_data['high']:.2f} / {week_data['low']:.2f} / {week_data['close']:.2f}")
-                        st.write(f"**Pattern:** {week_data['pattern']}")
-                        if week_data['description']:
-                            st.write(f"**Description:** {week_data['description']}")
+                        if entry_data.get('type') == 'week':
+                            st.write(f"**Week:** {entry_data['week_start']} to {entry_data['week_end']}")
+                            st.write(f"**Range:** {entry_data['weekly_range']:.2f}")
+                            st.write(f"**Change:** {entry_data['weekly_change_pct']:+.2f}%")
+                        else:  # day
+                            st.write(f"**Day:** {entry_data['date']}")
+                            st.write(f"**Range:** {entry_data['daily_range']:.2f}")
+                            st.write(f"**Change:** {entry_data['daily_change_pct']:+.2f}%")
+                        
+                        st.write(f"**OHLC:** {entry_data['open']:.2f} / {entry_data['high']:.2f} / {entry_data['low']:.2f} / {entry_data['close']:.2f}")
+                        st.write(f"**Pattern:** {entry_data['pattern']}")
+                        if entry_data['description']:
+                            st.write(f"**Description:** {entry_data['description']}")
                     
                     with col2:
-                        st.write(f"**Range:** {week_data['weekly_range']:.2f}")
-                        st.write(f"**Change:** {week_data['weekly_change_pct']:+.2f}%")
+                        st.write(f"**Type:** {entry_data.get('type', 'Unknown').title()}")
+                        st.write(f"**Added:** {entry_data['added_at'][:10]}")
                     
                     with col3:
-                        if st.button("🗑️ Delete", key=f"del_{symbol}_{week_key}"):
-                            if self.manual_manager.delete_manual_week(symbol, week_key):
-                                st.success("✅ Week deleted")
+                        if st.button("🗑️ Delete", key=f"del_{symbol}_{entry_key}"):
+                            if self.manual_manager.delete_manual_entry(symbol, entry_key):
+                                st.success("✅ Entry deleted")
                                 st.rerun()
                             else:
-                                st.error("❌ Failed to delete week")
+                                st.error("❌ Failed to delete entry")
     
     def _display_price_summary(self, symbol: str, data: pd.DataFrame):
         """Display price action summary"""
@@ -520,12 +614,19 @@ class WeeklyPriceActionCalendar:
                 'Other': '❓'
             }
             
-            # Add manual indicator
+            # Add manual indicator and type indicator
             manual_indicator = "📝" if row.get('Manual', False) else ""
-            pattern_display = f"{manual_indicator}{color_map.get(row['Pattern'], '⚪')}"
+            type_indicator = "📅" if row.get('Type') == 'Day' else ""
+            pattern_display = f"{manual_indicator}{type_indicator}{color_map.get(row['Pattern'], '⚪')}"
+            
+            # Format date range based on type
+            if row.get('Type') == 'Day':
+                date_display = f"{week_start} (Day)"
+            else:
+                date_display = f"{week_start} to {week_end}"
             
             calendar_data.append({
-                'Week': f"{week_start} to {week_end}",
+                'Week': date_display,
                 'Pattern': pattern_display,
                 'Open': f"${row['Open']:.2f}",
                 'High': f"${row['High']:.2f}",
