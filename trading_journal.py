@@ -172,7 +172,7 @@ ACCOUNT_SIZE = 10000  # Default account size for R-multiple calculation
 
 # App Version
 APP_VERSION = "3.1.0"
-LAST_UPDATE = "15-10-2025 01:24:05"
+LAST_UPDATE = "15-10-2025 01:31:31"
 
 # ===== USER MANAGEMENT FUNCTIONS (must be defined before login_page) =====
 
@@ -266,7 +266,6 @@ def login_page():
             <li>📋 <strong>Pre-Trade Planning</strong> - Plan trades vooraf</li>
             <li>💬 <strong>Admin Quotes</strong> - Inspirerende quotes systeem</li>
             <li>⏰ <strong>Mindset Check-ins</strong> - 15-minuten alerts</li>
-            <li>💤 <strong>Keep-Alive System</strong> - Voorkom slaapstand tijdens trading</li>
         </ul>
         <div style='background-color: rgba(255, 136, 0, 0.2); padding: 12px; border-radius: 8px; 
                     border-left: 3px solid #ff8800; margin-top: 15px;'>
@@ -335,10 +334,10 @@ def login_page():
         st.markdown("""
         <div style='background-color: rgba(38, 39, 48, 0.5); padding: 15px; border-radius: 10px; 
                     border: 1px solid rgba(0, 136, 255, 0.3); height: 180px;'>
-            <h4 style='color: #0088ff; margin-top: 0;'>💤 Keep-Alive System</h4>
+            <h4 style='color: #0088ff; margin-top: 0;'>📈 Weekly Price Action</h4>
             <p style='font-size: 14px; line-height: 1.6;'>
-                Voorkom dat je computer in slaapstand gaat tijdens trading sessies. 
-                Automatische sleep prevention met graceful shutdown.
+                Analyseer weekly candlestick patterns per symbool. Real-time data 
+                en automatische pattern classificatie voor betere market sentiment.
             </p>
         </div>
         """, unsafe_allow_html=True)
